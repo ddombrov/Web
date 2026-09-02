@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import ThemeRegistry from "./ThemeRegistry";
 import Nav from "./components/Nav";
 import { JourneyFilterProvider } from "./components/JourneyFilterContext";
+import { LightboxProvider } from "./components/Lightbox";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -24,8 +25,10 @@ export default function RootLayout({
       <body suppressHydrationWarning>
         <ThemeRegistry>
           <JourneyFilterProvider>
-            <Nav />
-            {children}
+            <LightboxProvider>
+              <Nav />
+              {children}
+            </LightboxProvider>
           </JourneyFilterProvider>
         </ThemeRegistry>
       </body>

@@ -1,11 +1,16 @@
 "use client";
 
+import { useState } from "react";
+import { createPortal } from "react-dom";
+import { motion, LayoutGroup } from "framer-motion";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Chip from "@mui/material/Chip";
 import IconButton from "@mui/material/IconButton";
+import Button from "@mui/material/Button";
+import Collapse from "@mui/material/Collapse";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
@@ -14,6 +19,7 @@ import LinkedInIcon from "@mui/icons-material/LinkedIn";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import AddPhotoAlternateOutlinedIcon from "@mui/icons-material/AddPhotoAlternateOutlined";
 import EmailIcon from "@mui/icons-material/Email";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import GitHubIcon from "./icons/GitHubIcon";
 import Reveal from "./Reveal";
 import Hi from "./Highlight";
@@ -22,10 +28,28 @@ import CollapsibleEarlyChapters from "./CollapsibleEarlyChapters";
 import TimelineRow, { YearMarker } from "./TimelineRow";
 import CourseList from "./CourseList";
 import { terms } from "./courseData";
+import { coopReports, type CoopReport, type ReportPhoto } from "./coopReports";
 import { skillIcons } from "./skillIcons";
 import ContactForm from "./ContactForm";
 import { textShadow, dropShadow, chipSx, photoFrameSx } from "./styles";
 import { useJourneyFilter, tagMatchesFilter } from "./JourneyFilterContext";
+import { useLightbox } from "./Lightbox";
+import { GalleryPortalProvider, useGalleryPortal } from "./GalleryPortalContext";
+import JourneyGalleryOverlay from "./JourneyGalleryOverlay";
+
+function slug(s: string) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
+// Deterministically spreads each entry's flight start time across roughly
+// a second, so cards/chips from different jobs visibly launch one after
+// another instead of every matching element taking off in the same frame
+// — the whole point of seeing a badge leave its specific origin card.
+function launchDelay(id: string, spreadSeconds = 1.1) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return (h % 1000) / 1000 * spreadSeconds;
+}
 
 // Each section continues the descent from the hero's dirt-brown fade
 // (#332D14) down toward near-black at Contact, so sections read as distinct
@@ -39,32 +63,93 @@ function skillIcon(label: string) {
   return Icon ? <Icon size={14} /> : undefined;
 }
 
-function SkillChips({ items }: { items: string[] }) {
+// Each chip is individually flight-tracked (its own layoutId) so that when
+// the Skills filter is active, it can detach from this card and portal
+// straight into the gallery overlay's skills cloud — Framer Motion animates
+// the move automatically since it's the same tracked element, just
+// re-parented. Outside of that filter it just renders in place as before.
+function SkillChips({ items, entryId }: { items: string[]; entryId: string }) {
+  const { filter, prevFilter } = useJourneyFilter();
+  const { skillsTarget } = useGalleryPortal();
+  const flying = filter === "skills";
+  const wasFlying = prevFilter === "skills";
+  const returning = wasFlying && !flying;
   return (
     <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1.5 }}>
-      {items.map((s) => (
-        <Chip key={s} label={s} size="small" variant="outlined" icon={skillIcon(s)} sx={chipSx} />
-      ))}
+      {items.map((s, i) => {
+        const chipId = `chip-${entryId}-${i}-${slug(s)}`;
+        const chipEl = (
+          <motion.div
+            key={chipId}
+            layoutId={chipId}
+            transition={
+              returning
+                ? { duration: 0.4, ease: [0.4, 0, 1, 1] }
+                : { duration: 1.8, ease: [0.22, 1, 0.36, 1], delay: launchDelay(entryId) + i * 0.12 }
+            }
+          >
+            <Chip label={s} size="small" variant="outlined" icon={skillIcon(s)} sx={chipSx} />
+          </motion.div>
+        );
+        if (flying) {
+          return skillsTarget ? createPortal(chipEl, skillsTarget, chipId) : null;
+        }
+        return chipEl;
+      })}
     </Box>
   );
 }
 
 // A real photo, wrapped so hovering it (not the card around it) triggers a
 // gentle zoom — used for every actual photograph/certificate on the page.
+// Clicking opens it full-size in the shared Lightbox instead of navigating
+// anywhere.
 function PhotoFrame({
   src,
   alt,
   width,
   height,
+  round = false,
 }: {
   src: string;
   alt: string;
   width: number;
   height: number;
+  round?: boolean;
 }) {
+  const { open } = useLightbox();
   return (
-    <Box component="a" href={src} target="_blank" rel="noopener noreferrer" sx={photoFrameSx}>
-      <Image src={src} alt={alt} width={width} height={height} style={{ display: "block", objectFit: "cover" }} />
+    <Box
+      component="button"
+      type="button"
+      onClick={() => open({ src, alt, width, height })}
+      aria-label={`View larger image: ${alt}`}
+      sx={{ all: "unset", cursor: "zoom-in", ...photoFrameSx, ...(round && { borderRadius: "50%" }) }}
+    >
+      <Image
+        src={src}
+        alt={alt}
+        width={width}
+        height={height}
+        style={{ display: "block", objectFit: "cover", maxWidth: "100%", height: "auto" }}
+      />
+    </Box>
+  );
+}
+
+// The billiards project's four table diagrams sit in one 2x2 grid image —
+// each one is still individually clickable through the same Lightbox.
+function GridImageButton({ src, alt }: { src: string; alt: string }) {
+  const { open } = useLightbox();
+  return (
+    <Box
+      component="button"
+      type="button"
+      onClick={() => open({ src, alt, width: 600, height: 600 })}
+      aria-label={`View larger image: ${alt}`}
+      sx={{ all: "unset", cursor: "zoom-in", display: "block" }}
+    >
+      <Image src={src} alt={alt} width={150} height={150} style={{ width: "100%", height: "auto", display: "block" }} />
     </Box>
   );
 }
@@ -92,6 +177,7 @@ function TimelineEntry({
   side = "left",
   isLast = false,
   aside,
+  reportKey,
   children,
 }: {
   logo?: string;
@@ -108,99 +194,189 @@ function TimelineEntry({
   side?: "left" | "right";
   isLast?: boolean;
   aside?: React.ReactNode;
+  reportKey?: string;
   children?: React.ReactNode;
 }) {
-  const { filter } = useJourneyFilter();
+  const { filter, prevFilter } = useJourneyFilter();
+  const { cardsTarget } = useGalleryPortal();
+  const [expanded, setExpanded] = useState(false);
   const matches = tagMatchesFilter(tag, skills.length > 0, filter);
-  return (
-    <TimelineRow side={side} startDate={startDate} endDate={endDate} isLast={isLast} aside={aside}>
-      <Reveal direction={side} once={false}>
-        <Box
-          sx={{
-            bgcolor: "rgba(255,255,255,0.045)",
-            border: "1px solid rgba(255,255,255,0.09)",
-            borderRadius: 3,
-            p: { xs: 2.5, md: 3 },
-            opacity: matches ? 1 : 0.25,
-            filter: matches ? "none" : "grayscale(65%)",
-            transform: filter && matches ? "scale(1.02)" : "scale(1)",
-            boxShadow: filter && matches ? "0 0 0 2px rgba(216,142,51,0.55), 0 20px 40px -16px rgba(0,0,0,0.6)" : "none",
-            transition: "transform 0.5s cubic-bezier(0.22,1,0.36,1), box-shadow 0.5s ease, border-color 0.35s ease, background-color 0.35s ease, opacity 0.5s ease, filter 0.5s ease",
-            "&:hover": {
-              transform: "translateY(-6px)",
-              boxShadow: "0 20px 40px -16px rgba(0,0,0,0.6)",
-              borderColor: "rgba(255,255,255,0.22)",
-              bgcolor: "rgba(255,255,255,0.075)",
-            },
-          }}
-        >
-          <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start", flexWrap: "wrap" }}>
-            {logo && (
-              <Image src={logo} alt={logoAlt ?? ""} width={56} height={56} style={{ objectFit: "contain", filter: dropShadow, flexShrink: 0 }} />
-            )}
-            <Box sx={{ flex: 1, minWidth: 200 }}>
-              {tag && (
-                <Typography variant="overline" sx={{ color: "secondary.main", textShadow, letterSpacing: 1.5, display: "block", lineHeight: 1.4 }}>
-                  {tag}
-                </Typography>
-              )}
-              <Typography variant="h5" component="h3" sx={{ color: "#fff", textShadow }}>
-                {title}
+  const matchedPrev = tagMatchesFilter(tag, skills.length > 0, prevFilter);
+  const entryId = slug(`${title}-${org ?? ""}-${startDate}`);
+  const cardFlies = Boolean(filter) && (filter === "projects" || filter === "experience") && matches;
+  const cardFlewPrev = Boolean(prevFilter) && (prevFilter === "projects" || prevFilter === "experience") && matchedPrev;
+  const cardReturning = cardFlewPrev && !cardFlies;
+  const report = reportKey ? coopReports[reportKey] : undefined;
+
+  const cardBody = (
+    <motion.div
+      layoutId={`card-${entryId}`}
+      layout
+      transition={
+        cardReturning
+          ? { duration: 0.45, ease: [0.4, 0, 1, 1] }
+          : { duration: 1.8, ease: [0.22, 1, 0.36, 1], delay: launchDelay(entryId, 0.6) }
+      }
+    >
+      <Box
+        sx={{
+          bgcolor: "rgba(255,255,255,0.045)",
+          border: "1px solid rgba(255,255,255,0.09)",
+          borderRadius: 3,
+          p: { xs: 2.5, md: 3 },
+          width: { md: cardFlies ? 420 : "auto" },
+          maxWidth: cardFlies ? "88vw" : "none",
+        }}
+      >
+        <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start", flexWrap: "wrap" }}>
+          {logo && (
+            <Image src={logo} alt={logoAlt ?? ""} width={56} height={56} style={{ objectFit: "contain", filter: dropShadow, flexShrink: 0 }} />
+          )}
+          <Box sx={{ flex: 1, minWidth: 200 }}>
+            {tag && (
+              <Typography variant="overline" sx={{ color: "secondary.main", textShadow, letterSpacing: 1.5, display: "block", lineHeight: 1.4 }}>
+                {tag}
               </Typography>
-              {githubUrl && (
-                <Box
-                  component="a"
-                  href={githubUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  sx={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 0.5,
-                    color: "rgba(255,255,255,0.65)",
-                    textShadow,
-                    mt: 0.25,
-                    "&:hover": { color: "#fff" },
-                  }}
-                >
-                  <GitHubIcon fontSize="small" />
-                  <Typography variant="caption">View on GitHub</Typography>
-                </Box>
-              )}
-              {org && (
-                <Typography variant="body2" fontStyle="italic" sx={{ color: "rgba(255,255,255,0.8)", textShadow }}>
-                  {org}
-                  {companyUrl && (
-                    <Box
-                      component="a"
-                      href={companyUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label="Company LinkedIn page"
-                      sx={{ color: "secondary.main", ml: 0.75, verticalAlign: "middle", display: "inline-flex" }}
-                    >
-                      <LinkedInIcon fontSize="small" />
-                    </Box>
-                  )}
+            )}
+            <Typography variant="h5" component="h3" sx={{ color: "#fff", textShadow }}>
+              {title}
+            </Typography>
+            {githubUrl && (
+              <Box
+                component="a"
+                href={githubUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                  color: "rgba(255,255,255,0.65)",
+                  textShadow,
+                  mt: 0.25,
+                  "&:hover": { color: "#fff" },
+                }}
+              >
+                <GitHubIcon fontSize="small" />
+                <Typography variant="caption">View on GitHub</Typography>
+              </Box>
+            )}
+            {org && (
+              <Typography variant="body2" fontStyle="italic" sx={{ color: "rgba(255,255,255,0.8)", textShadow }}>
+                {org}
+                {companyUrl && (
+                  <Box
+                    component="a"
+                    href={companyUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Company LinkedIn page"
+                    sx={{ color: "secondary.main", ml: 0.75, verticalAlign: "middle", display: "inline-flex" }}
+                  >
+                    <LinkedInIcon fontSize="small" />
+                  </Box>
+                )}
+              </Typography>
+            )}
+            {location && (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.4, mt: 0.5 }}>
+                <LocationOnOutlinedIcon sx={{ fontSize: 15, color: "rgba(255,255,255,0.55)" }} />
+                <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.6)", textShadow }}>
+                  {location}
                 </Typography>
-              )}
-              {location && (
-                <Box sx={{ display: "flex", alignItems: "center", gap: 0.4, mt: 0.5 }}>
-                  <LocationOnOutlinedIcon sx={{ fontSize: 15, color: "rgba(255,255,255,0.55)" }} />
-                  <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.6)", textShadow }}>
-                    {location}
-                  </Typography>
-                </Box>
-              )}
-            </Box>
+              </Box>
+            )}
           </Box>
-
-          {skills.length > 0 && <SkillChips items={skills} />}
-
-          {children}
         </Box>
+
+        {skills.length > 0 && <SkillChips items={skills} entryId={entryId} />}
+
+        {children}
+
+        {report && (
+          <>
+            <Button
+              onClick={() => setExpanded((e) => !e)}
+              endIcon={<ExpandMoreIcon sx={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.3s ease" }} />}
+              sx={{ mt: 2.5, color: "secondary.main", textTransform: "none", pl: 0, "&:hover": { bgcolor: "transparent", textDecoration: "underline" } }}
+            >
+              {expanded ? "Hide full work term report" : "Read full work term report"}
+            </Button>
+            <Collapse in={expanded} unmountOnExit>
+              <WorkTermReport report={report} />
+            </Collapse>
+          </>
+        )}
+      </Box>
+    </motion.div>
+  );
+
+  if (cardFlies) {
+    return (
+      <TimelineRow side={side} startDate={startDate} endDate={endDate} isLast={isLast}>
+        <Box sx={{ visibility: "hidden" }} aria-hidden />
+        {cardsTarget && createPortal(cardBody, cardsTarget, `card-${entryId}`)}
+      </TimelineRow>
+    );
+  }
+
+  return (
+    <TimelineRow side={side} startDate={startDate} endDate={endDate} isLast={isLast} aside={expanded ? undefined : aside} wide={expanded}>
+      <Reveal direction={side} once={false}>
+        {cardBody}
       </Reveal>
     </TimelineRow>
+  );
+}
+
+// The full Introduction / Duties / Goals / Conclusion text of a real
+// University of Guelph co-op work term report, expanded in place under its
+// timeline entry rather than linking out to a separate page.
+// Caps a real photo's display size to fit neatly in the report while
+// keeping its actual aspect ratio, rather than stretching or cropping it.
+function scaledSize(w: number, h: number, maxW = 420, maxH = 520) {
+  const scale = Math.min(maxW / w, maxH / h, 1);
+  return { width: Math.round(w * scale), height: Math.round(h * scale) };
+}
+
+// The report's own opening photo, reused as the aside thumbnail next to
+// the job card itself — so there's a real photo to see even before
+// expanding the full report.
+function ReportPhotoFrame({ photo }: { photo: ReportPhoto }) {
+  const { width, height } = scaledSize(photo.width, photo.height, 440, 380);
+  return <PhotoFrame src={photo.src} alt={photo.alt} width={width} height={height} />;
+}
+
+function WorkTermReport({ report }: { report: CoopReport }) {
+  const sections: { heading: string; paragraphs: string[]; photo: ReportPhoto }[] = [
+    { heading: "Introduction", paragraphs: report.intro, photo: report.photos[0] },
+    { heading: "Duties", paragraphs: report.duties, photo: report.photos[1] },
+    { heading: "Goals", paragraphs: report.goals, photo: report.photos[2] },
+    { heading: "Conclusion", paragraphs: report.conclusion, photo: report.photos[3] },
+  ];
+  return (
+    <Stack spacing={4} sx={{ mt: 3, pt: 3, borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+      {sections.map((s) => {
+        const { width, height } = scaledSize(s.photo.width, s.photo.height);
+        return (
+          <Box key={s.heading}>
+            <Box sx={{ mb: 2 }}>
+              <PhotoFrame src={s.photo.src} alt={s.photo.alt} width={width} height={height} />
+            </Box>
+            <Typography variant="overline" sx={{ color: "secondary.main", textShadow, letterSpacing: 1.5, display: "block" }}>
+              {s.heading}
+            </Typography>
+            <Stack spacing={1.5} sx={{ mt: 0.5 }}>
+              {s.paragraphs.map((p, i) => (
+                <Typography key={i} variant="body2" sx={{ color: "#EDEFF3", textShadow, lineHeight: 1.7 }}>
+                  {p}
+                </Typography>
+              ))}
+            </Stack>
+          </Box>
+        );
+      })}
+    </Stack>
   );
 }
 
@@ -232,18 +408,41 @@ function PhotoSlot({ label = "Photo coming soon" }: { label?: string }) {
   );
 }
 
-// One academic term's courses, rendered as its own timeline entry at that
-// term's approximate start month so coursework sits alongside whatever
-// else was happening that semester, instead of one giant collapsed blob.
-function CourseTermEntry({ label, side }: { label: string; side: "left" | "right" }) {
+// A plain "[Season] [Year]" marker sitting on the rail right above that
+// term's coursework card — just a label, no card of its own, so it reads
+// as a section header rather than another entry competing for space.
+function TermHeader({ label }: { label: string }) {
   const term = terms.find((t) => t.label === label);
-  if (!term) return null;
+  if (!term || term.courses.length === 0) return null;
+  return (
+    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "70px 1fr", md: "1fr 130px 1fr" }, columnGap: { xs: 2, md: 4 }, mb: 1.5 }}>
+      <Box sx={{ gridColumn: { xs: "1", md: "2" }, display: "flex", justifyContent: "center" }}>
+        <Box sx={{ width: "2px", height: 22, bgcolor: "rgba(255,255,255,0.18)" }} />
+      </Box>
+      <Box sx={{ gridColumn: { xs: "2", md: "1 / -1" }, textAlign: "center" }}>
+        <Typography variant="subtitle1" sx={{ color: "rgba(255,255,255,0.6)", textShadow, fontWeight: 700, letterSpacing: 1 }}>
+          {term.label}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
+// A term's coursework, treated exactly like a job entry — "Student" as the
+// title, University of Guelph as the place of "employment" — so it reads
+// as a real card in the alternating timeline rather than a different kind
+// of thing. Co-op terms with nothing left to list here (their job already
+// has its own full entry) render nothing at all.
+function TermCourseworkEntry({ label, side }: { label: string; side: "left" | "right" }) {
+  const term = terms.find((t) => t.label === label);
+  if (!term || term.courses.length === 0) return null;
   return (
     <TimelineEntry
       side={side}
-      tag={term.upcoming ? "Upcoming" : "Coursework"}
-      title={term.label}
+      tag={term.upcoming ? "Upcoming" : "Education"}
+      title="Student"
       org="University of Guelph"
+      location="Guelph, Ontario"
       startDate={term.date}
     >
       <CourseList courses={term.courses} />
@@ -329,7 +528,12 @@ const recommendations = [
 ];
 
 export default function PageContent() {
+  const { filter, prevFilter } = useJourneyFilter();
+  const journeyFilterActive = Boolean(filter);
+  const journeyFilterClosing = Boolean(prevFilter) && !filter;
   return (
+    <GalleryPortalProvider>
+    <LayoutGroup>
     <>
       {/* About */}
       <Box id="about" sx={{ py: { xs: 10, md: 16 }, background: aboutBg, position: "relative", zIndex: 1 }}>
@@ -338,7 +542,7 @@ export default function PageContent() {
           <RevealHeading text="About Me" />
           <Box sx={{ display: "flex", flexDirection: { xs: "column", md: "row" }, gap: { xs: 4, md: 6 }, alignItems: "flex-start" }}>
             <Box sx={{ flexShrink: 0, mx: { xs: "auto", md: 0 } }}>
-              <PhotoFrame src="/me.jpg" alt="Image of Me" width={220} height={294} />
+              <PhotoFrame src="/me.jpg" alt="Image of Me" width={260} height={260} round />
             </Box>
 
             <Stack spacing={3} sx={{ textAlign: { xs: "center", md: "left" } }}>
@@ -364,11 +568,6 @@ export default function PageContent() {
                 A fun fact about me is that I have previously broken my left leg,
                 my right leg, and had a fingernail come off.
               </Typography>
-
-              <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.75)", textShadow }}>
-                My full education, awards, and work history are laid out as a
-                timeline below, in the order they happened.
-              </Typography>
             </Stack>
           </Box>
         </Container>
@@ -377,19 +576,27 @@ export default function PageContent() {
 
       {/* Experience */}
       <Box id="experience" sx={{ py: { xs: 10, md: 16 }, background: experienceBg, position: "relative", zIndex: 1 }}>
-        <Container maxWidth="md">
+        <JourneyGalleryOverlay />
+        <Container maxWidth="xl">
           <Typography
             variant="h2"
             sx={{ color: "#fff", textAlign: "center", mb: 1, fontSize: { xs: "2rem", md: "2.75rem" }, textShadow }}
           >
             My Journey
           </Typography>
-          <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.8)", textShadow, textAlign: "center", mb: 6 }}>
+          <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.8)", textShadow, textAlign: "center", mb: 6, maxWidth: 640, mx: "auto" }}>
             Education, co-ops, clubs, projects, and recognition — everything I&apos;ve
-            done, in the order it happened. Use Skills or Projects in the menu to
-            filter it down.
+            done, in the order it happened. Use Skills, Experience, or Projects in
+            the menu to see them float out on their own.
           </Typography>
-          <Box>
+          <Box
+            sx={{
+              opacity: journeyFilterActive ? 0 : 1,
+              filter: journeyFilterActive ? "blur(8px)" : "none",
+              pointerEvents: journeyFilterActive ? "none" : "auto",
+              transition: journeyFilterClosing ? "opacity 0.5s ease, filter 0.5s ease" : "opacity 1.8s ease 0.3s, filter 1.8s ease 0.3s",
+            }}
+          >
             <CollapsibleEarlyChapters label="2017 – 2023 · Before university (high school, summer jobs)">
               <YearMarker year="2017" />
               <TimelineEntry
@@ -508,7 +715,8 @@ export default function PageContent() {
               />
             </TimelineEntry>
 
-            <CourseTermEntry label="Fall 2022" side="left" />
+            <TermHeader label="Fall 2022" />
+            <TermCourseworkEntry label="Fall 2022" side="left" />
 
             <TimelineEntry
               logo="/socisLogo.png"
@@ -533,7 +741,8 @@ export default function PageContent() {
 
             <YearMarker year="2023" />
 
-            <CourseTermEntry label="Winter 2023" side="left" />
+            <TermHeader label="Winter 2023" />
+            <TermCourseworkEntry label="Winter 2023" side="left" />
 
             <TimelineEntry
               side="right"
@@ -543,7 +752,7 @@ export default function PageContent() {
               endDate="Apr 2023"
               githubUrl="https://github.com/ddombrov/BabyNamesFrequencyProject"
               skills={["Python", "Pandas"]}
-              aside={<PhotoFrame src="/babyNames.png" alt="Baby Names Frequency Tracker screenshot" width={420} height={237} />}
+              aside={<PhotoFrame src="/babyNames.png" alt="Baby Names Frequency Tracker screenshot" width={520} height={293} />}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
                 In Software Design II, me and a group of four collaborated
@@ -576,9 +785,11 @@ export default function PageContent() {
               />
             </TimelineEntry>
 
-            <CourseTermEntry label="Summer 2023" side="right" />
+            <TermHeader label="Summer 2023" />
+            <TermCourseworkEntry label="Summer 2023" side="right" />
 
-            <CourseTermEntry label="Fall 2023" side="left" />
+            <TermHeader label="Fall 2023" />
+            <TermCourseworkEntry label="Fall 2023" side="left" />
 
             <TimelineEntry
               logo="/gdscLogo.png"
@@ -615,7 +826,7 @@ export default function PageContent() {
               startDate="Dec 2023"
               endDate="May 2024"
               skills={["Time Management", "Public Speaking", "Leadership", "Budgeting", "Event Planning"]}
-              aside={<PhotoFrame src="/group.jpg" alt="Image of computing community" width={300} height={200} />}
+              aside={<PhotoFrame src="/group.jpg" alt="Image of computing community" width={380} height={253} />}
             >
               <BulletList
                 items={[
@@ -647,7 +858,8 @@ export default function PageContent() {
 
             <YearMarker year="2024" />
 
-            <CourseTermEntry label="Winter 2024" side="right" />
+            <TermHeader label="Winter 2024" />
+            <TermCourseworkEntry label="Winter 2024" side="right" />
 
             <TimelineEntry
               side="left"
@@ -655,7 +867,7 @@ export default function PageContent() {
               title="Introducing Artificial Intelligence: Training for the Road Ahead"
               org="CARE-AI, University of Guelph"
               startDate="Jan 2024"
-              aside={<PhotoFrame src="/care-ai-cert.png" alt="CARE-AI certificate of completion" width={90} height={117} />}
+              aside={<PhotoFrame src="/care-ai-cert.png" alt="CARE-AI certificate of completion" width={210} height={273} />}
             >
               <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)", textShadow, mt: 2 }}>
                 Completed through the Centre for Advancing Responsible &amp;
@@ -672,9 +884,9 @@ export default function PageContent() {
               githubUrl="https://github.com/ddombrov/Billards-Game"
               skills={["C", "Python", "JavaScript", "jQuery", "SQL", "HTML", "CSS"]}
               aside={
-                <Box sx={{ ...photoFrameSx, display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "2px", p: "2px", bgcolor: "#fff" }}>
+                <Box sx={{ borderRadius: 2, overflow: "hidden", filter: dropShadow, display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "2px", p: "2px", bgcolor: "#fff", maxWidth: 220, mx: { xs: "auto", md: 0 } }}>
                   {["/table-0.svg", "/table-1.svg", "/table-2.svg", "/table-3.svg"].map((src) => (
-                    <Image key={src} src={src} alt="Billiards table" width={150} height={150} style={{ width: "100%", height: "auto", display: "block" }} />
+                    <GridImageButton key={src} src={src} alt="Billiards table" />
                   ))}
                 </Box>
               }
@@ -688,7 +900,8 @@ export default function PageContent() {
               </Typography>
             </TimelineEntry>
 
-            <CourseTermEntry label="Summer 2024" side="left" />
+            <TermHeader label="Summer 2024" />
+            <TermCourseworkEntry label="Summer 2024" side="left" />
 
             <TimelineEntry
               side="right"
@@ -700,10 +913,11 @@ export default function PageContent() {
               endDate="Aug 2024"
               companyUrl="https://www.linkedin.com/company/ccmps-uofg"
               skills={["Python", "R", "Plotly", "BeautifulSoup", "Selenium"]}
+              reportKey="uofg-2024"
               aside={
                 <Stack spacing={3}>
                   <Box>
-                    <PhotoFrame src="/coop-nomination.jpg" alt="Co-op Employee of the Year Nomination certificate" width={90} height={117} />
+                    <PhotoFrame src="/coop-nomination.jpg" alt="Co-op Employee of the Year Nomination certificate" width={210} height={273} />
                     <Typography variant="body2" sx={{ color: "#EDEFF3", textShadow, mt: 1 }}>
                       Nominated for Co-op Employee of the Year by University of
                       Guelph Experiential Learning, Aug 2024, on behalf of the
@@ -742,7 +956,8 @@ export default function PageContent() {
               </Typography>
             </TimelineEntry>
 
-            <CourseTermEntry label="Fall 2024" side="right" />
+            <TermHeader label="Fall 2024" />
+            <TermCourseworkEntry label="Fall 2024" side="right" />
 
             <TimelineEntry
               side="left"
@@ -753,7 +968,8 @@ export default function PageContent() {
               startDate="Sep 2024"
               endDate="Dec 2024"
               skills={["Time Management", "Public Speaking", "Active Directory"]}
-              aside={<PhotoSlot />}
+              reportKey="guelph-2024"
+              aside={<ReportPhotoFrame photo={coopReports["guelph-2024"].photos[0]} />}
             >
               <BulletList
                 items={[
@@ -766,7 +982,8 @@ export default function PageContent() {
 
             <YearMarker year="2025" />
 
-            <CourseTermEntry label="Winter 2025" side="right" />
+            <TermHeader label="Winter 2025" />
+            <TermCourseworkEntry label="Winter 2025" side="right" />
 
             <TimelineEntry
               side="left"
@@ -824,7 +1041,8 @@ export default function PageContent() {
               </Typography>
             </TimelineEntry>
 
-            <CourseTermEntry label="Summer 2025" side="right" />
+            <TermHeader label="Summer 2025" />
+            <TermCourseworkEntry label="Summer 2025" side="right" />
 
             <TimelineEntry
               side="left"
@@ -836,7 +1054,8 @@ export default function PageContent() {
               endDate="Aug 2025"
               companyUrl="https://www.linkedin.com/company/canadian-institute-for-health-information"
               skills={["Python", "Spring Boot", "UML"]}
-              aside={<PhotoSlot />}
+              reportKey="cihi-2025"
+              aside={<ReportPhotoFrame photo={coopReports["cihi-2025"].photos[0]} />}
             >
               <BulletList
                 items={[
@@ -848,7 +1067,8 @@ export default function PageContent() {
               />
             </TimelineEntry>
 
-            <CourseTermEntry label="Fall 2025" side="right" />
+            <TermHeader label="Fall 2025" />
+            <TermCourseworkEntry label="Fall 2025" side="right" />
 
             <TimelineEntry
               side="left"
@@ -864,7 +1084,8 @@ export default function PageContent() {
 
             <YearMarker year="2026" />
 
-            <CourseTermEntry label="Winter 2026" side="right" />
+            <TermHeader label="Winter 2026" />
+            <TermCourseworkEntry label="Winter 2026" side="right" />
 
             <TimelineEntry
               side="left"
@@ -873,24 +1094,64 @@ export default function PageContent() {
               org="Pepper"
               location="Toronto, Ontario"
               startDate="Jan 2026"
-              endDate="Present"
+              endDate="Apr 2026"
               companyUrl="https://www.linkedin.com/company/usepepper"
-              skills={["React", "TypeScript", "Python", "AWS Lambda", "Postgres", "Terraform", "Django", "Hasura/GraphQL", "FastAPI", "Fastify"]}
-              aside={<PhotoSlot />}
+              skills={["React", "TypeScript", "AWS Lambda", "Terraform"]}
+              reportKey="pepper-2026-winter"
+              aside={<ReportPhotoFrame photo={coopReports["pepper-2026-winter"].photos[0]} />}
             >
               <BulletList
                 items={[
                   <>Built and shipped an internal EDI operations dashboard giving field engineers real-time visibility into <Hi>921</Hi> suppliers and <Hi>1,667</Hi> integration pipelines processing roughly <Hi>40,000</Hi> EDI runs a day across <Hi>30+</Hi> ERP systems</>,
                   <>Built a recurring-route planner that was a committed requirement in a <Hi>$99k ARR</Hi> / <Hi>~$297k TCV</Hi> distributor contract close, shipping a sales-rep task manager now covering <Hi>17</Hi> active routes across <Hi>178</Hi> accounts</>,
-                  <>Owned and shipped a multi-tenant credit-application and automated-underwriting platform end to end with FCRA-compliant decisioning, launching a self-serve form builder and reviewer dashboard to <Hi>8</Hi> pilot distributor tenants</>,
-                  <>Designed the customer-facing successor to the EDI dashboard, currently in progress — moving failure alerting from internal-only visibility into the core product</>,
                 ]}
               />
             </TimelineEntry>
 
-            <CourseTermEntry label="Summer 2026" side="right" />
+            <TermHeader label="Summer 2026" />
+            <TermCourseworkEntry label="Summer 2026" side="right" />
 
-            <CourseTermEntry label="Fall 2026" side="left" />
+            <TimelineEntry
+              side="right"
+              tag="Co-op"
+              title="Software Engineer"
+              org="Pepper"
+              location="Toronto, Ontario"
+              startDate="May 2026"
+              endDate="Aug 2026"
+              companyUrl="https://www.linkedin.com/company/usepepper"
+              skills={["Python", "Django", "Postgres", "Hasura/GraphQL", "FastAPI", "Fastify"]}
+              reportKey="pepper-2026-summer"
+              aside={<ReportPhotoFrame photo={coopReports["pepper-2026-summer"].photos[0]} />}
+            >
+              <BulletList
+                items={[
+                  <>Owned and shipped a multi-tenant credit-application and automated-underwriting platform end to end with FCRA-compliant decisioning, launching a self-serve form builder and reviewer dashboard to <Hi>8</Hi> pilot distributor tenants</>,
+                  <>Designed and shipped the customer-facing successor to the EDI dashboard, moving failure alerting from internal-only visibility into the core product</>,
+                ]}
+              />
+            </TimelineEntry>
+
+            <TermHeader label="Fall 2026" />
+            <TermCourseworkEntry label="Fall 2026" side="left" />
+
+            <TimelineEntry
+              side="left"
+              tag="Part-time"
+              title="Software Engineer"
+              org="Pepper"
+              location="Toronto, Ontario"
+              startDate="Sep 2026"
+              endDate="Present"
+              companyUrl="https://www.linkedin.com/company/usepepper"
+              aside={<PhotoSlot />}
+            >
+              <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
+                Continuing on with Pepper part-time this semester alongside
+                coursework, after two co-op terms with the company and five
+                co-op terms overall.
+              </Typography>
+            </TimelineEntry>
 
             <YearMarker year="2027" />
 
@@ -942,5 +1203,7 @@ export default function PageContent() {
         </Reveal>
       </Box>
     </>
+    </LayoutGroup>
+    </GalleryPortalProvider>
   );
 }

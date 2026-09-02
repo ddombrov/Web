@@ -1,6 +1,18 @@
+import { useId } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { textShadow } from "./styles";
+
+// A small, stable-per-instance jag so the two columns don't form a rigid
+// aligned grid — content nudges up or down a little (dot and rail stay put)
+// for a looser, more collage-like rhythm. Hashing React's own useId keeps
+// it deterministic across server/client instead of reaching for Math.random.
+function jagOffset(id: string) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  const pattern = [-18, 22, -8, 30, 0, -26, 14];
+  return pattern[h % pattern.length];
+}
 
 const dateSx = {
   color: "rgba(255,255,255,0.65)",
@@ -70,8 +82,8 @@ export function YearMarker({ year }: { year: string }) {
     <Box
       sx={{
         display: "grid",
-        gridTemplateColumns: { xs: "70px 1fr", md: "1fr 110px 1fr" },
-        columnGap: { xs: 2, md: 3 },
+        gridTemplateColumns: { xs: "70px 1fr", md: "1fr 130px 1fr" },
+        columnGap: { xs: 2, md: 4 },
         mb: 3,
       }}
     >
@@ -108,6 +120,7 @@ export default function TimelineRow({
   endDate,
   isLast = false,
   aside,
+  wide = false,
   children,
 }: {
   side?: "left" | "right";
@@ -115,15 +128,18 @@ export default function TimelineRow({
   endDate?: string;
   isLast?: boolean;
   aside?: React.ReactNode;
+  wide?: boolean;
   children: React.ReactNode;
 }) {
   const isLeft = side === "left";
+  const contentJag = jagOffset(useId());
+  const asideJag = jagOffset(useId());
   return (
     <Box
       sx={{
         display: "grid",
-        gridTemplateColumns: { xs: "70px 1fr", md: "1fr 110px 1fr" },
-        columnGap: { xs: 2, md: 3 },
+        gridTemplateColumns: { xs: "70px 1fr", md: "1fr 130px 1fr" },
+        columnGap: { xs: 2, md: 4 },
         rowGap: { xs: 3, md: 0 },
         mb: isLast ? 0 : 6,
       }}
@@ -131,12 +147,16 @@ export default function TimelineRow({
       <TimelineDot startDate={startDate} endDate={endDate} isLast={isLast} />
       <Box
         sx={{
-          gridColumn: { xs: "2", md: isLeft ? "1" : "3" },
+          gridColumn: { xs: "2", md: wide ? "1 / -1" : isLeft ? "1" : "3" },
           gridRow: "1",
-          justifySelf: { xs: "stretch", md: isLeft ? "end" : "start" },
+          position: wide ? "relative" : "static",
+          zIndex: wide ? 2 : "auto",
+          justifySelf: { xs: "stretch", md: wide ? "stretch" : isLeft ? "end" : "start" },
           width: "100%",
-          maxWidth: { md: 460 },
+          maxWidth: { md: wide ? "100%" : 620 },
           minWidth: 0,
+          mt: { md: wide ? 0 : `${contentJag}px` },
+          transition: "max-width 0.5s cubic-bezier(0.22,1,0.36,1)",
         }}
       >
         {children}
@@ -148,8 +168,9 @@ export default function TimelineRow({
             gridRow: { xs: "2", md: "1" },
             justifySelf: { xs: "stretch", md: isLeft ? "start" : "end" },
             width: "100%",
-            maxWidth: { md: 460 },
+            maxWidth: { md: 620 },
             minWidth: 0,
+            mt: { md: `${asideJag}px` },
           }}
         >
           {aside}

@@ -1,0 +1,426 @@
+import Container from "@mui/material/Container";
+import Typography from "@mui/material/Typography";
+import Box from "@mui/material/Box";
+import Stack from "@mui/material/Stack";
+import Divider from "@mui/material/Divider";
+import Chip from "@mui/material/Chip";
+import IconButton from "@mui/material/IconButton";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemText from "@mui/material/ListItemText";
+import Image from "next/image";
+import LinkedInIcon from "@mui/icons-material/LinkedIn";
+import EmailIcon from "@mui/icons-material/Email";
+import GitHubIcon from "./icons/GitHubIcon";
+import Reveal from "./Reveal";
+import Hi from "./Highlight";
+import RevealHeading from "./RevealHeading";
+import ProjectsGrid from "./ProjectsGrid";
+import ContactForm from "./ContactForm";
+import LinkedInPosts from "./LinkedInPosts";
+import { textShadow, dropShadow, chipSx } from "./styles";
+
+// Each section continues the descent from the hero's dirt-brown fade
+// (#332D14) down toward near-black at Contact, so sections read as distinct
+// stops on one journey rather than one flat color for the whole page.
+const aboutBg = "linear-gradient(180deg, #332D14 0%, #3B331D 100%)";
+const skillsBg = "linear-gradient(180deg, #3B331D 0%, #2F2816 100%)";
+const experienceBg = "linear-gradient(180deg, #2F2816 0%, #241F10 100%)";
+const projectsBg = "linear-gradient(180deg, #241F10 0%, #1A160C 100%)";
+const contactBg = "linear-gradient(180deg, #1A160C 0%, #0F0C07 100%)";
+
+const languages = ["Python", "JavaScript", "Java", "C", "Dart", "R", "SQL", "HTML", "CSS"];
+const technologies = [
+  "React", "TypeScript", "Next.js", "Django", "FastAPI", "Spring Boot", "Flutter", "Flask",
+  "AWS", "Terraform", "Hasura", "Docker", "Fastify", "Git", "PostgreSQL", "Firebase", "Supabase", "Pandas",
+];
+
+function SkillChips({ items }: { items: string[] }) {
+  return (
+    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1.5 }}>
+      {items.map((s) => (
+        <Chip key={s} label={s} size="small" variant="outlined" sx={chipSx} />
+      ))}
+    </Box>
+  );
+}
+
+// Deterministic (not Math.random — same hydration issue this project hit
+// once before) per-chip bob: varied duration/delay/amplitude by index so a
+// whole field of chips drifts asynchronously instead of in lockstep.
+function floatSx(i: number) {
+  const duration = 3 + (i % 5) * 0.4;
+  const delay = (i % 7) * 0.3;
+  const amplitude = 5 + (i % 3) * 3;
+  return {
+    display: "inline-flex",
+    animation: `floatChip${amplitude} ${duration}s ease-in-out ${delay}s infinite`,
+    [`@keyframes floatChip${amplitude}`]: {
+      "0%, 100%": { transform: "translateY(0px)" },
+      "50%": { transform: `translateY(-${amplitude}px)` },
+    },
+    "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+  };
+}
+
+function FloatingSkillChips({ items }: { items: string[] }) {
+  return (
+    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
+      {items.map((s, i) => (
+        <Chip key={s} label={s} variant="outlined" sx={{ ...chipSx, ...floatSx(i) }} />
+      ))}
+    </Box>
+  );
+}
+
+// Vertical timeline entry: a dot + connecting line beside the content,
+// instead of a repeated heading/paragraph block for every role.
+function TimelineEntry({
+  logo,
+  logoAlt,
+  title,
+  subtitle,
+  skills,
+  isLast = false,
+  children,
+}: {
+  logo?: string;
+  logoAlt?: string;
+  title: string;
+  subtitle: string;
+  skills: string[];
+  isLast?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Box sx={{ display: "flex", gap: { xs: 2, md: 3 } }}>
+      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", pt: 0.75 }}>
+        <Box
+          sx={{
+            width: 16,
+            height: 16,
+            borderRadius: "50%",
+            flexShrink: 0,
+            bgcolor: "secondary.main",
+            boxShadow: "0 0 0 4px rgba(255,255,255,0.08)",
+          }}
+        />
+        {!isLast && <Box sx={{ flex: 1, width: 2, bgcolor: "rgba(255,255,255,0.2)", mt: 1 }} />}
+      </Box>
+      <Box sx={{ flex: 1, pb: 6, minWidth: 0 }}>
+        <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start", flexWrap: "wrap" }}>
+          {logo && (
+            <Image src={logo} alt={logoAlt ?? ""} width={56} height={56} style={{ objectFit: "contain", filter: dropShadow }} />
+          )}
+          <Box sx={{ flex: 1, minWidth: 200 }}>
+            <Typography variant="h5" component="h3" sx={{ color: "#fff", textShadow }}>
+              {title}
+            </Typography>
+            <Typography variant="body2" fontStyle="italic" sx={{ color: "rgba(255,255,255,0.8)", textShadow }}>
+              {subtitle}
+            </Typography>
+          </Box>
+        </Box>
+
+        <SkillChips items={skills} />
+
+        {children}
+      </Box>
+    </Box>
+  );
+}
+
+function BulletList({ items }: { items: React.ReactNode[] }) {
+  return (
+    <List dense sx={{ mt: 1 }}>
+      {items.map((item, i) => (
+        <ListItem key={i} sx={{ py: 0.25 }}>
+          <ListItemText primary={<Box sx={{ color: "#EDEFF3", textShadow }}>{item}</Box>} />
+        </ListItem>
+      ))}
+    </List>
+  );
+}
+
+export default function PageContent() {
+  return (
+    <>
+      {/* About */}
+      <Box id="about" sx={{ py: { xs: 10, md: 16 }, background: aboutBg, position: "relative", zIndex: 1 }}>
+        <Reveal>
+        <Container maxWidth="md">
+          <RevealHeading text="About Me" />
+          <Box sx={{ display: "flex", flexDirection: { xs: "column", md: "row" }, gap: { xs: 4, md: 6 }, alignItems: "flex-start" }}>
+            <Box sx={{ flexShrink: 0, mx: { xs: "auto", md: 0 }, textAlign: "center" }}>
+              <Image
+                src="/me.jpg"
+                alt="Image of Me"
+                width={220}
+                height={294}
+                style={{ borderRadius: 8, objectFit: "cover", filter: dropShadow }}
+              />
+              <Typography variant="caption" display="block" sx={{ color: "rgba(255,255,255,0.75)", textShadow, mt: 1 }}>
+                This is a photo of me during the Fall 2023 semester.
+              </Typography>
+            </Box>
+
+            <Stack spacing={3} sx={{ textAlign: { xs: "center", md: "left" } }}>
+              <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow }}>
+                My name is Daniel Dombrovsky. I am currently a student at the
+                University of Guelph in the Bachelor of Computing program, majoring
+                in Software Engineering with Co-op. I love being involved in my
+                community by attending computing events, joining clubs, and
+                meeting new people. My courses have refined my back-end development
+                skills, which are complemented by the hands-on experience I gained
+                in front-end development through my extracurriculars. I thrive at
+                working in collaborative environments and creating innovative
+                solutions to intricate problems.
+              </Typography>
+              <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow }}>
+                Outside of university, I am interested in baking, I love trying new
+                recipes I come across online and cooking family recipes at home. I
+                love biking with my family and spending time outside during the
+                Summer. I currently live in Cambridge and cannot wait to complete
+                my degree to travel the world.
+              </Typography>
+              <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow }}>
+                A fun fact about me is that I have previously broken my left leg,
+                my right leg, and had a fingernail come off.
+              </Typography>
+
+              <Divider sx={{ borderColor: "rgba(255,255,255,0.18)", my: 1 }} />
+
+              <Typography variant="h6" sx={{ color: "#fff", textShadow }}>
+                Education
+              </Typography>
+              <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow }}>
+                University of Guelph — Bachelor of Computing, Software Engineering
+                Co-op (GPA <Hi>3.84</Hi>), Expected May 2027
+              </Typography>
+              <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)", textShadow }}>
+                Courses: Data Structures, Algorithms, Software Development,
+                Object-Oriented Programming, Web Development
+              </Typography>
+            </Stack>
+          </Box>
+        </Container>
+        </Reveal>
+      </Box>
+
+      {/* Skills */}
+      <Box id="skills" sx={{ py: { xs: 10, md: 16 }, background: skillsBg, position: "relative", zIndex: 1 }}>
+        <Reveal>
+        <Container maxWidth="md">
+          <Typography
+            variant="h2"
+            sx={{ color: "#fff", textAlign: "center", mb: 6, fontSize: { xs: "2rem", md: "2.75rem" }, textShadow }}
+          >
+            Skills
+          </Typography>
+          <Stack spacing={4}>
+            <Box>
+              <Typography variant="h6" sx={{ color: "#fff", textShadow, mb: 2 }}>
+                Languages
+              </Typography>
+              <FloatingSkillChips items={languages} />
+            </Box>
+            <Box>
+              <Typography variant="h6" sx={{ color: "#fff", textShadow, mb: 2 }}>
+                Technologies
+              </Typography>
+              <FloatingSkillChips items={technologies} />
+            </Box>
+          </Stack>
+        </Container>
+        </Reveal>
+      </Box>
+
+      {/* Experience */}
+      <Box id="experience" sx={{ py: { xs: 10, md: 16 }, background: experienceBg, position: "relative", zIndex: 1 }}>
+        <Reveal>
+        <Container maxWidth="md">
+          <Typography
+            variant="h2"
+            sx={{ color: "#fff", textAlign: "center", mb: 6, fontSize: { xs: "2rem", md: "2.75rem" }, textShadow }}
+          >
+            Experience
+          </Typography>
+          <Box>
+            <TimelineEntry
+              title="Software Engineer Intern"
+              subtitle="Jan 2026 – Present · Pepper, Toronto, Ontario"
+              skills={["React", "TypeScript", "Python", "AWS Lambda", "Postgres", "Terraform", "Django", "Hasura/GraphQL", "FastAPI", "Fastify"]}
+            >
+              <BulletList
+                items={[
+                  <>Built and shipped an internal EDI operations dashboard giving field engineers real-time visibility into <Hi>921</Hi> suppliers and <Hi>1,667</Hi> integration pipelines processing roughly <Hi>40,000</Hi> EDI runs a day across <Hi>30+</Hi> ERP systems</>,
+                  <>Built a recurring-route planner that was a committed requirement in a <Hi>$99k ARR</Hi> / <Hi>~$297k TCV</Hi> distributor contract close, shipping a sales-rep task manager now covering <Hi>17</Hi> active routes across <Hi>178</Hi> accounts</>,
+                  <>Owned and shipped a multi-tenant credit-application and automated-underwriting platform end to end with FCRA-compliant decisioning, launching a self-serve form builder and reviewer dashboard to <Hi>8</Hi> pilot distributor tenants</>,
+                  <>Designed the customer-facing successor to the EDI dashboard, currently in progress — moving failure alerting from internal-only visibility into the core product</>,
+                ]}
+              />
+            </TimelineEntry>
+
+            <TimelineEntry
+              title="Software Engineer Intern"
+              subtitle="Feb 2025 – Dec 2025 · Lapis, Toronto, Ontario"
+              skills={["Next.js", "TypeScript", "Supabase", "Google OAuth", "Microsoft OAuth", "CRON"]}
+            >
+              <BulletList
+                items={[
+                  <>Architected a high-performance company dashboard, cutting load times from <Hi>4.9s</Hi> to <Hi>200ms</Hi></>,
+                  <>Integrated Notion and OneDrive APIs, allowing clients to import databases and files in a single click</>,
+                  <>Implemented secure authentication with Google and Microsoft OAuth and custom role-based access control</>,
+                  <>Automated nightly Supabase backups with CRON jobs, protecting <Hi>1.6 TB</Hi> of client data across <Hi>31</Hi> accounts</>,
+                ]}
+              />
+            </TimelineEntry>
+
+            <TimelineEntry
+              title="Software Engineer Intern"
+              subtitle="May 2025 – Aug 2025 · Canadian Institute for Health Information, Toronto, Ontario"
+              skills={["Python", "Spring Boot", "UML"]}
+            >
+              <BulletList
+                items={[
+                  <>Streamlined <Hi>80%</Hi> of manual data processing by developing Python scripts for healthcare data model conversions</>,
+                  <>Designed AI workflows for healthcare data analysis, automating <Hi>19</Hi> weekly review tasks for the data team</>,
+                  <>Contributed to national UML diagram standards adopted by <Hi>6,000+</Hi> healthcare facilities across Canada</>,
+                  <>Migrated a legacy healthcare data reporting service to Spring Boot, reducing service maintenance costs by <Hi>30%</Hi></>,
+                ]}
+              />
+            </TimelineEntry>
+
+            <TimelineEntry
+              title="Software Engineer Intern"
+              subtitle="May 2024 – Aug 2024 · University of Guelph, Guelph, Ontario"
+              skills={["Python", "R", "Plotly", "BeautifulSoup", "Selenium"]}
+            >
+              <BulletList
+                items={[
+                  <>Launched an accessible platform for collaboration on disease research modeling used by <Hi>70+</Hi> faculty members</>,
+                  <>Built interactive Plotly and R dashboards for hospitalization predictions, supporting <Hi>3</Hi> active research studies</>,
+                  <>Accelerated faculty data collection by <Hi>99%</Hi> by engineering a web scraper, extracting data from <Hi>1,000+</Hi> Google Scholar pages in minutes instead of days of manual entry</>,
+                ]}
+              />
+            </TimelineEntry>
+
+            <TimelineEntry
+              logo="/gdscLogo.png"
+              logoAlt="GDSC logo"
+              title="Director of Technical Events"
+              subtitle="Sep 2022 – Aug 2023 · Google Developer Student Club, Guelph, Ontario"
+              skills={["Git", "Flutter", "React", "Gemini AI"]}
+            >
+              <BulletList
+                items={[
+                  <>Organized a <Hi>250+</Hi> person hackathon with <Hi>45</Hi> project submissions and speakers from Google and Echo3D</>,
+                  <>Strengthened technical skills across <Hi>200+</Hi> students through workshops on Git, Flutter, React, and Gemini AI</>,
+                  <>Grew club membership from <Hi>0</Hi> to <Hi>300+</Hi> students, making it the largest computer science club on campus</>,
+                  <>Secured <Hi>$30,000+</Hi> in sponsorships from <Hi>14</Hi> companies to fund <Hi>25+</Hi> technical events and hackathon prizes</>,
+                ]}
+              />
+            </TimelineEntry>
+
+            <TimelineEntry
+              logo="/socisLogo.png"
+              logoAlt="SOCIS logo"
+              title="SOCIS President"
+              subtitle="Dec 2023 – Present · Guelph, Ontario, Canada"
+              skills={["Leadership", "Budgeting", "Event Planning"]}
+              isLast
+            >
+              <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
+                I took over as the president of the Society of Computing and
+                Informational Science during a chaotic time for the club and I
+                began rebuilding the club. I led the executive team to success
+                by organizing meetings, meticulously planning out the budget,
+                and advocating for computing students at faculty curriculum
+                meetings. The club also launched brand new computing merch to
+                represent Guelph Computing, which was very popular with
+                students.
+              </Typography>
+
+              <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
+                Some of our most successful events for the club were:
+              </Typography>
+              <BulletList
+                items={[
+                  <>Study Night (<Hi>50</Hi> people)</>,
+                  <>Games Night (<Hi>60</Hi> people)</>,
+                  <>Coding Competition (<Hi>75</Hi> people)</>,
+                ]}
+              />
+
+              <Box sx={{ mt: 2 }}>
+                <Image
+                  src="/group.jpg"
+                  alt="Image of computing community"
+                  width={300}
+                  height={200}
+                  style={{ borderRadius: 8, objectFit: "cover", filter: dropShadow }}
+                />
+                <Typography variant="caption" display="block" sx={{ color: "rgba(255,255,255,0.75)", textShadow, mt: 1 }}>
+                  The above image is a group picture of all the computing
+                  leaders coming together at the SOCIS Election Social event to
+                  welcome the newcomers.
+                </Typography>
+              </Box>
+            </TimelineEntry>
+          </Box>
+        </Container>
+        </Reveal>
+      </Box>
+
+      {/* Projects */}
+      <Box id="projects" sx={{ py: { xs: 10, md: 16 }, background: projectsBg, position: "relative", zIndex: 1 }}>
+        <Reveal>
+        <Container maxWidth="md">
+          <Typography
+            variant="h2"
+            sx={{ color: "#fff", textAlign: "center", mb: 6, fontSize: { xs: "2rem", md: "2.75rem" }, textShadow }}
+          >
+            Projects
+          </Typography>
+          <ProjectsGrid />
+        </Container>
+        </Reveal>
+      </Box>
+
+      {/* Contact */}
+      <Box id="contact" sx={{ py: { xs: 10, md: 14 }, textAlign: "center", background: contactBg, position: "relative", zIndex: 1 }}>
+        <Reveal>
+        <Container maxWidth="sm">
+          <Typography variant="h4" sx={{ color: "#fff", mb: 1, textShadow }}>
+            Contact Me
+          </Typography>
+          <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mb: 4 }}>
+            Feel free to check out my GitHub, LinkedIn, or send me a message below.
+          </Typography>
+          <LinkedInPosts />
+          <ContactForm />
+          <Stack direction="row" spacing={1} justifyContent="center" sx={{ mt: 5, mb: 4 }}>
+            <IconButton component="a" href="https://github.com/ddombrov" aria-label="GitHub" sx={{ color: "#fff" }}>
+              <GitHubIcon />
+            </IconButton>
+            <IconButton
+              component="a"
+              href="https://www.linkedin.com/in/daniel-dombrovsky-9d/"
+              aria-label="LinkedIn"
+              sx={{ color: "#fff" }}
+            >
+              <LinkedInIcon />
+            </IconButton>
+            <IconButton component="a" href="mailto:ddombrov@uoguelph.ca" aria-label="Email" sx={{ color: "#fff" }}>
+              <EmailIcon />
+            </IconButton>
+          </Stack>
+          <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.6)", textShadow }}>
+            © 2026 Daniel Dombrovsky
+          </Typography>
+        </Container>
+        </Reveal>
+      </Box>
+    </>
+  );
+}

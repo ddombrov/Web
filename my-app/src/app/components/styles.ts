@@ -12,3 +12,15 @@ export const chipSx = {
   textShadow,
   "& .MuiChip-icon": { color: "#fff" },
 };
+
+// Applied to the Box wrapping any real photo (not logos/icons): a gentle
+// zoom on the image itself when hovered, so photos feel interactive even
+// though the cards around them no longer are.
+export const photoFrameSx = {
+  borderRadius: 2,
+  overflow: "hidden",
+  filter: dropShadow,
+  display: "inline-block",
+  "& img": { transition: "transform 0.45s ease" },
+  "&:hover img": { transform: "scale(1.07)" },
+};

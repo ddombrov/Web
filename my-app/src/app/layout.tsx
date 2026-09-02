@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
-import "./globals.css";
+import { Inter } from "next/font/google";
+import ThemeRegistry from "./ThemeRegistry";
 import Nav from "./components/Nav";
-import Footer from "./components/Footer";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
 
 export const metadata: Metadata = {
   title: "Daniel Dombrovsky",
@@ -14,17 +19,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <head>
-        <link
-          rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
-        />
-      </head>
-      <body>
-        <Nav />
-        {children}
-        <Footer />
+    <html lang="en" className={inter.variable}>
+      <body suppressHydrationWarning>
+        <ThemeRegistry>
+          <Nav />
+          {children}
+        </ThemeRegistry>
       </body>
     </html>
   );

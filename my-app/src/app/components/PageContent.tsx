@@ -142,6 +142,71 @@ function BulletList({ items }: { items: React.ReactNode[] }) {
   );
 }
 
+// Testimonial card: a quote mark + left accent bar instead of yet another
+// bordered rectangle, so recommendations read distinctly from timeline entries.
+function RecommendationCard({
+  name,
+  title,
+  relationship,
+  quote,
+}: {
+  name: string;
+  title: string;
+  relationship: string;
+  quote: string;
+}) {
+  return (
+    <Box sx={{ borderLeft: "3px solid", borderColor: "secondary.main", pl: 3, py: 0.5 }}>
+      <Typography
+        aria-hidden
+        sx={{ color: "secondary.main", fontSize: "3rem", lineHeight: 0.6, fontFamily: "Georgia, serif" }}
+      >
+        &ldquo;
+      </Typography>
+      <Stack spacing={1.5} sx={{ mt: -2 }}>
+        {quote.split("\n\n").map((para, i) => (
+          <Typography key={i} variant="body1" fontStyle="italic" sx={{ color: "#EDEFF3", textShadow }}>
+            {para}
+          </Typography>
+        ))}
+      </Stack>
+      <Typography variant="subtitle2" sx={{ color: "#fff", textShadow, mt: 2 }}>
+        {name}
+      </Typography>
+      <Typography variant="caption" display="block" sx={{ color: "rgba(255,255,255,0.7)", textShadow }}>
+        {title}
+      </Typography>
+      <Typography variant="caption" display="block" sx={{ color: "rgba(255,255,255,0.55)", textShadow }}>
+        {relationship}
+      </Typography>
+    </Box>
+  );
+}
+
+const recommendations = [
+  {
+    name: "Purvi Patel",
+    title: "Regional Manager (Canada), University of Guelph",
+    relationship: "Managed Daniel directly · December 5, 2025",
+    quote:
+      "Daniel participated in a prospective student information event and shared his valuable experiences with future computing students. He was a pleasure to work with as he was professional, dependable and enthusiastic. He is an excellent public speaker. I recommend Daniel for any future endeavors.",
+  },
+  {
+    name: "Monica Cojocaru",
+    title: "Associate Dean, Research and Graduate Studies, University of Guelph",
+    relationship: "Senior to Daniel, did not manage him directly · October 24, 2024",
+    quote:
+      "I had the pleasure of working with Daniel Dombrovsky during his time as a Research Web Developer Co-op student at the College of Engineering and Physical Sciences. Daniel exceeded expectations by taking full ownership of designing and developing the AI4CastingHub website, a key initiative advancing research collaboration in disease forecasting. His technical expertise, attention to detail, and ability to create a user-friendly, professional site were praised by faculty, staff, and external partners alike. Daniel's collaboration skills and eagerness to continuously improve made him an invaluable asset to my team.",
+  },
+  {
+    name: "Dr. Bethany Davidson-Eng",
+    title: "College Research Manager, College of Engineering and Physical Sciences, University of Guelph",
+    relationship: "Managed Daniel directly · September 4, 2024",
+    quote:
+      "Daniel Dombrovsky was the Research Web Developer and Communications Assistant Co-op student with the College of Engineering and Physical Sciences Dean's Office. Daniel's performance during his four-month term was exceptional, exceeded our expectations and set a new standard for co-op students in our office.\n\nDaniel's innovative approach was evident from the outset. Tasked with gathering data for our annual research output report—a process that typically consumes two weeks of staff time—Daniel chose to tackle the challenge with a creative solution. Rather than completing the task manually, he developed a sophisticated web scraper tool that streamlined data collection. This tool drastically reduced the time required to compile the report from days to mere minutes, saving our office dozens of hours of labor and significantly increasing efficiency. This proactive and inventive solution not only resolved the immediate task but will continue to benefit our office well beyond Daniel's term.\n\nOne of Daniel's notable accomplishments was his work on the website for one of our new initiatives. Initially, the expectation was for Daniel to lay the groundwork for the new manager to develop the site further in Fall 2024. However, Daniel exceeded these expectations by completing the website himself. His dedication and expertise ensured that the site will be launched at the Initiative Launch event this September 2024, a testament to his exceptional work ethic and commitment. His ability to work confidently and effectively with faculty, staff, industry, and government representatives to achieve this goal is a clear indication of his professional integrity and skill.\n\nIn addition to his technical achievements, Daniel has had a remarkable impact on staff morale and the quality of work within our team. His friendly, engaging demeanor and willingness to assist wherever needed made him a pleasure to work with. His enthusiasm and positive attitude fostered a collaborative and supportive work environment, which was greatly appreciated by both colleagues and supervisors.",
+  },
+];
+
 export default function PageContent() {
   return (
     <>
@@ -198,9 +263,67 @@ export default function PageContent() {
                 Co-op (GPA <Hi>3.84</Hi>), Expected May 2027
               </Typography>
               <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)", textShadow }}>
+                Minoring in Culture and Technology Studies · Entrance Scholarship
+                (2022) · Dean&apos;s Honour List (2022–2023)
+              </Typography>
+              <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)", textShadow }}>
                 Courses: Data Structures, Algorithms, Software Development,
                 Object-Oriented Programming, Web Development
               </Typography>
+
+              <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 1 }}>
+                St. Benedict Catholic Secondary School — High School Diploma,
+                STEM, Sep 2018 – Jun 2022
+              </Typography>
+              <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)", textShadow }}>
+                Member of Robotics Club, Coding Club, Math Club, Business Club,
+                and Debate Team · Co-founded Tech Summit, a club discussing
+                current tech news during COVID · Student Council, editing
+                promotional videos and updating the school&apos;s website
+              </Typography>
+
+              <Divider sx={{ borderColor: "rgba(255,255,255,0.18)", my: 1 }} />
+
+              <Typography variant="h6" sx={{ color: "#fff", textShadow }}>
+                Honors &amp; Awards
+              </Typography>
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 2,
+                  alignItems: "flex-start",
+                  flexDirection: { xs: "column", sm: "row" },
+                  textAlign: "left",
+                }}
+              >
+                <Box
+                  component="a"
+                  href="/coop-nomination.jpg"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{ flexShrink: 0, mx: { xs: "auto", sm: 0 } }}
+                >
+                  <Image
+                    src="/coop-nomination.jpg"
+                    alt="Co-op Employee of the Year Nomination certificate"
+                    width={110}
+                    height={143}
+                    style={{ borderRadius: 6, objectFit: "cover", filter: dropShadow }}
+                  />
+                </Box>
+                <Box>
+                  <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow }}>
+                    Co-op Employee of the Year Nomination
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)", textShadow }}>
+                    Issued by University of Guelph — Experiential Learning · Aug 2024
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.6)", textShadow }}>
+                    Associated with College of Engineering and Physical Sciences,
+                    University of Guelph
+                  </Typography>
+                </Box>
+              </Box>
             </Stack>
           </Box>
         </Container>
@@ -229,6 +352,36 @@ export default function PageContent() {
                 Technologies
               </Typography>
               <FloatingSkillChips items={technologies} />
+            </Box>
+            <Box>
+              <Typography variant="h6" sx={{ color: "#fff", textShadow, mb: 2 }}>
+                Certifications
+              </Typography>
+              <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
+                <Box
+                  component="a"
+                  href="/care-ai-cert.png"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{ flexShrink: 0 }}
+                >
+                  <Image
+                    src="/care-ai-cert.png"
+                    alt="CARE-AI certificate of completion"
+                    width={110}
+                    height={143}
+                    style={{ borderRadius: 6, objectFit: "cover", filter: dropShadow }}
+                  />
+                </Box>
+                <Box>
+                  <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow }}>
+                    Introducing Artificial Intelligence: Training for the Road Ahead
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)", textShadow }}>
+                    CARE-AI, University of Guelph · Issued Jan 2024
+                  </Typography>
+                </Box>
+              </Box>
             </Box>
           </Stack>
         </Container>
@@ -289,6 +442,17 @@ export default function PageContent() {
                   <>Migrated a legacy healthcare data reporting service to Spring Boot, reducing service maintenance costs by <Hi>30%</Hi></>,
                 ]}
               />
+            </TimelineEntry>
+
+            <TimelineEntry
+              title="Marketing Team Member (Volunteer)"
+              subtitle="Jan 2025 – Apr 2025 · Guelph Coding Community, Guelph, Ontario"
+              skills={[]}
+            >
+              <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
+                Volunteered on the marketing team promoting the Guelph Coding
+                Community&apos;s events and initiatives to local students.
+              </Typography>
             </TimelineEntry>
 
             <TimelineEntry
@@ -368,6 +532,15 @@ export default function PageContent() {
               </Box>
             </TimelineEntry>
           </Box>
+
+          <Stack spacing={4} sx={{ mt: 8 }}>
+            <Typography variant="h5" sx={{ color: "#fff", textShadow, textAlign: "center" }}>
+              Recommendations
+            </Typography>
+            {recommendations.map((r) => (
+              <RecommendationCard key={r.name} {...r} />
+            ))}
+          </Stack>
         </Container>
         </Reveal>
       </Box>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import ThemeRegistry from "./ThemeRegistry";
 import Nav from "./components/Nav";
+import { JourneyFilterProvider } from "./components/JourneyFilterContext";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -22,8 +23,10 @@ export default function RootLayout({
     <html lang="en" className={inter.variable}>
       <body suppressHydrationWarning>
         <ThemeRegistry>
-          <Nav />
-          {children}
+          <JourneyFilterProvider>
+            <Nav />
+            {children}
+          </JourneyFilterProvider>
         </ThemeRegistry>
       </body>
     </html>

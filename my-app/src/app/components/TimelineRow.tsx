@@ -61,6 +61,40 @@ export function TimelineDot({
   );
 }
 
+// A big year number standing in for a dot at each year boundary — a
+// visual anchor you can orient by while scrolling past a long run of
+// same-year entries, much louder than the small month/year captions on
+// ordinary entries.
+export function YearMarker({ year }: { year: string }) {
+  return (
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: { xs: "70px 1fr", md: "1fr 110px 1fr" },
+        columnGap: { xs: 2, md: 3 },
+        mb: 3,
+      }}
+    >
+      <Box sx={{ gridColumn: { xs: "1", md: "2" }, display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <Box sx={{ width: "2px", height: 24, bgcolor: "rgba(255,255,255,0.18)" }} />
+        <Typography
+          sx={{
+            fontWeight: 800,
+            fontSize: { xs: "1.6rem", md: "2.1rem" },
+            lineHeight: 1,
+            color: "#fff",
+            textShadow,
+            my: 0.5,
+          }}
+        >
+          {year}
+        </Typography>
+        <Box sx={{ flex: 1, width: "2px", bgcolor: "rgba(255,255,255,0.18)", minHeight: 24 }} />
+      </Box>
+    </Box>
+  );
+}
+
 // Row grid shared by every timeline entry: a dot (and date) centered on a
 // continuous background line, with content alternating left/right of it on
 // desktop and collapsing to a single left column on mobile. An optional

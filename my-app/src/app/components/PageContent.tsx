@@ -1,3 +1,5 @@
+"use client";
+
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
@@ -17,28 +19,20 @@ import Reveal from "./Reveal";
 import Hi from "./Highlight";
 import RevealHeading from "./RevealHeading";
 import CollapsibleEarlyChapters from "./CollapsibleEarlyChapters";
-import TimelineRow from "./TimelineRow";
+import TimelineRow, { YearMarker } from "./TimelineRow";
 import CourseList from "./CourseList";
 import { terms } from "./courseData";
 import { skillIcons } from "./skillIcons";
-import ProjectsGrid from "./ProjectsGrid";
 import ContactForm from "./ContactForm";
-import { textShadow, dropShadow, chipSx } from "./styles";
+import { textShadow, dropShadow, chipSx, photoFrameSx } from "./styles";
+import { useJourneyFilter, tagMatchesFilter } from "./JourneyFilterContext";
 
 // Each section continues the descent from the hero's dirt-brown fade
 // (#332D14) down toward near-black at Contact, so sections read as distinct
 // stops on one journey rather than one flat color for the whole page.
 const aboutBg = "linear-gradient(180deg, #332D14 0%, #3B331D 100%)";
-const skillsBg = "linear-gradient(180deg, #3B331D 0%, #2F2816 100%)";
-const experienceBg = "linear-gradient(180deg, #2F2816 0%, #241F10 100%)";
-const projectsBg = "linear-gradient(180deg, #241F10 0%, #1A160C 100%)";
+const experienceBg = "linear-gradient(180deg, #3B331D 0%, #1A160C 100%)";
 const contactBg = "linear-gradient(180deg, #1A160C 0%, #0F0C07 100%)";
-
-const languages = ["Python", "JavaScript", "Java", "C", "Dart", "R", "SQL", "HTML", "CSS"];
-const technologies = [
-  "React", "TypeScript", "Next.js", "Django", "FastAPI", "Spring Boot", "Flutter", "Flask",
-  "AWS", "Terraform", "Hasura", "Docker", "Fastify", "Git", "PostgreSQL", "Firebase", "Supabase", "Pandas",
-];
 
 function skillIcon(label: string) {
   const Icon = skillIcons[label];
@@ -55,30 +49,22 @@ function SkillChips({ items }: { items: string[] }) {
   );
 }
 
-// Deterministic (not Math.random — same hydration issue this project hit
-// once before) per-chip bob: varied duration/delay/amplitude by index so a
-// whole field of chips drifts asynchronously instead of in lockstep.
-function floatSx(i: number) {
-  const duration = 3 + (i % 5) * 0.4;
-  const delay = (i % 7) * 0.3;
-  const amplitude = 5 + (i % 3) * 3;
-  return {
-    display: "inline-flex",
-    animation: `floatChip${amplitude} ${duration}s ease-in-out ${delay}s infinite`,
-    [`@keyframes floatChip${amplitude}`]: {
-      "0%, 100%": { transform: "translateY(0px)" },
-      "50%": { transform: `translateY(-${amplitude}px)` },
-    },
-    "@media (prefers-reduced-motion: reduce)": { animation: "none" },
-  };
-}
-
-function FloatingSkillChips({ items }: { items: string[] }) {
+// A real photo, wrapped so hovering it (not the card around it) triggers a
+// gentle zoom — used for every actual photograph/certificate on the page.
+function PhotoFrame({
+  src,
+  alt,
+  width,
+  height,
+}: {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+}) {
   return (
-    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
-      {items.map((s, i) => (
-        <Chip key={s} label={s} variant="outlined" icon={skillIcon(s)} sx={{ ...chipSx, ...floatSx(i) }} />
-      ))}
+    <Box component="a" href={src} target="_blank" rel="noopener noreferrer" sx={photoFrameSx}>
+      <Image src={src} alt={alt} width={width} height={height} style={{ display: "block", objectFit: "cover" }} />
     </Box>
   );
 }
@@ -124,6 +110,8 @@ function TimelineEntry({
   aside?: React.ReactNode;
   children?: React.ReactNode;
 }) {
+  const { filter } = useJourneyFilter();
+  const matches = tagMatchesFilter(tag, skills.length > 0, filter);
   return (
     <TimelineRow side={side} startDate={startDate} endDate={endDate} isLast={isLast} aside={aside}>
       <Reveal direction={side} once={false}>
@@ -133,7 +121,11 @@ function TimelineEntry({
             border: "1px solid rgba(255,255,255,0.09)",
             borderRadius: 3,
             p: { xs: 2.5, md: 3 },
-            transition: "transform 0.35s cubic-bezier(0.22,1,0.36,1), box-shadow 0.35s ease, border-color 0.35s ease, background-color 0.35s ease",
+            opacity: matches ? 1 : 0.25,
+            filter: matches ? "none" : "grayscale(65%)",
+            transform: filter && matches ? "scale(1.02)" : "scale(1)",
+            boxShadow: filter && matches ? "0 0 0 2px rgba(216,142,51,0.55), 0 20px 40px -16px rgba(0,0,0,0.6)" : "none",
+            transition: "transform 0.5s cubic-bezier(0.22,1,0.36,1), box-shadow 0.5s ease, border-color 0.35s ease, background-color 0.35s ease, opacity 0.5s ease, filter 0.5s ease",
             "&:hover": {
               transform: "translateY(-6px)",
               boxShadow: "0 20px 40px -16px rgba(0,0,0,0.6)",
@@ -345,17 +337,8 @@ export default function PageContent() {
         <Container maxWidth="md">
           <RevealHeading text="About Me" />
           <Box sx={{ display: "flex", flexDirection: { xs: "column", md: "row" }, gap: { xs: 4, md: 6 }, alignItems: "flex-start" }}>
-            <Box sx={{ flexShrink: 0, mx: { xs: "auto", md: 0 }, textAlign: "center" }}>
-              <Image
-                src="/me.jpg"
-                alt="Image of Me"
-                width={220}
-                height={294}
-                style={{ borderRadius: 8, objectFit: "cover", filter: dropShadow }}
-              />
-              <Typography variant="caption" display="block" sx={{ color: "rgba(255,255,255,0.75)", textShadow, mt: 1 }}>
-                This is a photo of me during the Fall 2023 semester.
-              </Typography>
+            <Box sx={{ flexShrink: 0, mx: { xs: "auto", md: 0 } }}>
+              <PhotoFrame src="/me.jpg" alt="Image of Me" width={220} height={294} />
             </Box>
 
             <Stack spacing={3} sx={{ textAlign: { xs: "center", md: "left" } }}>
@@ -392,34 +375,6 @@ export default function PageContent() {
         </Reveal>
       </Box>
 
-      {/* Skills */}
-      <Box id="skills" sx={{ py: { xs: 10, md: 16 }, background: skillsBg, position: "relative", zIndex: 1 }}>
-        <Reveal>
-        <Container maxWidth="md">
-          <Typography
-            variant="h2"
-            sx={{ color: "#fff", textAlign: "center", mb: 6, fontSize: { xs: "2rem", md: "2.75rem" }, textShadow }}
-          >
-            Skills
-          </Typography>
-          <Stack spacing={4}>
-            <Box>
-              <Typography variant="h6" sx={{ color: "#fff", textShadow, mb: 2 }}>
-                Languages
-              </Typography>
-              <FloatingSkillChips items={languages} />
-            </Box>
-            <Box>
-              <Typography variant="h6" sx={{ color: "#fff", textShadow, mb: 2 }}>
-                Technologies
-              </Typography>
-              <FloatingSkillChips items={technologies} />
-            </Box>
-          </Stack>
-        </Container>
-        </Reveal>
-      </Box>
-
       {/* Experience */}
       <Box id="experience" sx={{ py: { xs: 10, md: 16 }, background: experienceBg, position: "relative", zIndex: 1 }}>
         <Container maxWidth="md">
@@ -430,10 +385,13 @@ export default function PageContent() {
             My Journey
           </Typography>
           <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.8)", textShadow, textAlign: "center", mb: 6 }}>
-            Education, co-ops, clubs, and recognition, in the order they happened.
+            Education, co-ops, clubs, projects, and recognition — everything I&apos;ve
+            done, in the order it happened. Use Skills or Projects in the menu to
+            filter it down.
           </Typography>
           <Box>
             <CollapsibleEarlyChapters label="2017 – 2023 · Before university (high school, summer jobs)">
+              <YearMarker year="2017" />
               <TimelineEntry
                 side="left"
                 tag="Job"
@@ -452,6 +410,7 @@ export default function PageContent() {
                 />
               </TimelineEntry>
 
+              <YearMarker year="2018" />
               <TimelineEntry
                 side="right"
                 tag="Education"
@@ -469,6 +428,7 @@ export default function PageContent() {
                 </Typography>
               </TimelineEntry>
 
+              <YearMarker year="2019" />
               <TimelineEntry
                 side="left"
                 tag="Job"
@@ -488,6 +448,7 @@ export default function PageContent() {
                 />
               </TimelineEntry>
 
+              <YearMarker year="2020" />
               <TimelineEntry
                 side="right"
                 tag="Job"
@@ -506,6 +467,7 @@ export default function PageContent() {
                 />
               </TimelineEntry>
 
+              <YearMarker year="2021" />
               <TimelineEntry
                 side="left"
                 tag="Job"
@@ -525,6 +487,8 @@ export default function PageContent() {
                 />
               </TimelineEntry>
             </CollapsibleEarlyChapters>
+
+            <YearMarker year="2022" />
 
             <TimelineEntry
               side="right"
@@ -567,6 +531,8 @@ export default function PageContent() {
               />
             </TimelineEntry>
 
+            <YearMarker year="2023" />
+
             <CourseTermEntry label="Winter 2023" side="left" />
 
             <TimelineEntry
@@ -577,6 +543,7 @@ export default function PageContent() {
               endDate="Apr 2023"
               githubUrl="https://github.com/ddombrov/BabyNamesFrequencyProject"
               skills={["Python", "Pandas"]}
+              aside={<PhotoFrame src="/babyNames.png" alt="Baby Names Frequency Tracker screenshot" width={420} height={237} />}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
                 In Software Design II, me and a group of four collaborated
@@ -648,6 +615,7 @@ export default function PageContent() {
               startDate="Dec 2023"
               endDate="May 2024"
               skills={["Time Management", "Public Speaking", "Leadership", "Budgeting", "Event Planning"]}
+              aside={<PhotoFrame src="/group.jpg" alt="Image of computing community" width={300} height={200} />}
             >
               <BulletList
                 items={[
@@ -675,22 +643,9 @@ export default function PageContent() {
                   <>Coding Competition (<Hi>75</Hi> people)</>,
                 ]}
               />
-
-              <Box sx={{ mt: 2 }}>
-                <Image
-                  src="/group.jpg"
-                  alt="Image of computing community"
-                  width={300}
-                  height={200}
-                  style={{ borderRadius: 8, objectFit: "cover", filter: dropShadow }}
-                />
-                <Typography variant="caption" display="block" sx={{ color: "rgba(255,255,255,0.75)", textShadow, mt: 1 }}>
-                  The above image is a group picture of all the computing
-                  leaders coming together at the SOCIS Election Social event to
-                  welcome the newcomers.
-                </Typography>
-              </Box>
             </TimelineEntry>
+
+            <YearMarker year="2024" />
 
             <CourseTermEntry label="Winter 2024" side="right" />
 
@@ -700,22 +655,12 @@ export default function PageContent() {
               title="Introducing Artificial Intelligence: Training for the Road Ahead"
               org="CARE-AI, University of Guelph"
               startDate="Jan 2024"
+              aside={<PhotoFrame src="/care-ai-cert.png" alt="CARE-AI certificate of completion" width={90} height={117} />}
             >
-              <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start", mt: 2 }}>
-                <Box component="a" href="/care-ai-cert.png" target="_blank" rel="noopener noreferrer" sx={{ flexShrink: 0 }}>
-                  <Image
-                    src="/care-ai-cert.png"
-                    alt="CARE-AI certificate of completion"
-                    width={90}
-                    height={117}
-                    style={{ borderRadius: 6, objectFit: "cover", filter: dropShadow }}
-                  />
-                </Box>
-                <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)", textShadow }}>
-                  Completed through the Centre for Advancing Responsible &amp;
-                  Ethical Artificial Intelligence at the University of Guelph.
-                </Typography>
-              </Box>
+              <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)", textShadow, mt: 2 }}>
+                Completed through the Centre for Advancing Responsible &amp;
+                Ethical Artificial Intelligence at the University of Guelph.
+              </Typography>
             </TimelineEntry>
 
             <TimelineEntry
@@ -726,6 +671,13 @@ export default function PageContent() {
               endDate="Apr 2024"
               githubUrl="https://github.com/ddombrov/Billards-Game"
               skills={["C", "Python", "JavaScript", "jQuery", "SQL", "HTML", "CSS"]}
+              aside={
+                <Box sx={{ ...photoFrameSx, display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "2px", p: "2px", bgcolor: "#fff" }}>
+                  {["/table-0.svg", "/table-1.svg", "/table-2.svg", "/table-3.svg"].map((src) => (
+                    <Image key={src} src={src} alt="Billiards table" width={150} height={150} style={{ width: "100%", height: "auto", display: "block" }} />
+                  ))}
+                </Box>
+              }
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
                 In CIS*2750, Software Systems Development and Integration, I
@@ -750,6 +702,14 @@ export default function PageContent() {
               skills={["Python", "R", "Plotly", "BeautifulSoup", "Selenium"]}
               aside={
                 <Stack spacing={3}>
+                  <Box>
+                    <PhotoFrame src="/coop-nomination.jpg" alt="Co-op Employee of the Year Nomination certificate" width={90} height={117} />
+                    <Typography variant="body2" sx={{ color: "#EDEFF3", textShadow, mt: 1 }}>
+                      Nominated for Co-op Employee of the Year by University of
+                      Guelph Experiential Learning, Aug 2024, on behalf of the
+                      College of Engineering and Physical Sciences.
+                    </Typography>
+                  </Box>
                   <RecommendationCard {...recommendations[2]} />
                   <RecommendationCard {...recommendations[1]} />
                 </Stack>
@@ -762,39 +722,6 @@ export default function PageContent() {
                   <>Accelerated faculty data collection by <Hi>99%</Hi> by engineering a web scraper, extracting data from <Hi>1,000+</Hi> Google Scholar pages in minutes instead of days of manual entry</>,
                 ]}
               />
-
-              <Box
-                sx={{
-                  display: "flex",
-                  gap: 2,
-                  alignItems: "flex-start",
-                  flexDirection: { xs: "column", sm: "row" },
-                  mt: 3,
-                }}
-              >
-                <Box
-                  component="a"
-                  href="/coop-nomination.jpg"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  sx={{ flexShrink: 0, mx: { xs: "auto", sm: 0 } }}
-                >
-                  <Image
-                    src="/coop-nomination.jpg"
-                    alt="Co-op Employee of the Year Nomination certificate"
-                    width={90}
-                    height={117}
-                    style={{ borderRadius: 6, objectFit: "cover", filter: dropShadow }}
-                  />
-                </Box>
-                <Box>
-                  <Typography variant="body2" sx={{ color: "#EDEFF3", textShadow }}>
-                    Nominated for Co-op Employee of the Year by University of
-                    Guelph Experiential Learning, Aug 2024, on behalf of the
-                    College of Engineering and Physical Sciences.
-                  </Typography>
-                </Box>
-              </Box>
             </TimelineEntry>
 
             <TimelineEntry
@@ -804,6 +731,7 @@ export default function PageContent() {
               startDate="Aug 2024"
               githubUrl="https://github.com/ddombrov/HackThe6ix2024"
               skills={["Next.js", "OpenAI", "ElevenLabs", "Python", "React", "Firebase", "Material UI"]}
+              aside={<PhotoSlot />}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
                 Produced an AI-driven app to automate voice calls to businesses
@@ -835,6 +763,8 @@ export default function PageContent() {
                 ]}
               />
             </TimelineEntry>
+
+            <YearMarker year="2025" />
 
             <CourseTermEntry label="Winter 2025" side="right" />
 
@@ -875,10 +805,29 @@ export default function PageContent() {
               />
             </TimelineEntry>
 
-            <CourseTermEntry label="Summer 2025" side="left" />
+            <TimelineEntry
+              side="left"
+              tag="Project"
+              title="Canadian-Origin Barcode Scanner"
+              startDate="Mar 2025"
+              endDate="Apr 2025"
+              githubUrl="https://github.com/ddombrov/oh_scanada"
+              skills={["Flutter", "Dart", "Firestore"]}
+              aside={<PhotoSlot />}
+            >
+              <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
+                In CIS*4030, Mobile Computing, developed a barcode scanning app
+                that retrieves product and sustainability information for{" "}
+                <Hi>1M+</Hi> products. Leveraged Firestore for data
+                management, implementing social features, profile settings,
+                and accessibility modes.
+              </Typography>
+            </TimelineEntry>
+
+            <CourseTermEntry label="Summer 2025" side="right" />
 
             <TimelineEntry
-              side="right"
+              side="left"
               tag="Co-op"
               title="Software Engineer"
               org="Canadian Institute for Health Information"
@@ -899,10 +848,10 @@ export default function PageContent() {
               />
             </TimelineEntry>
 
-            <CourseTermEntry label="Fall 2025" side="left" />
+            <CourseTermEntry label="Fall 2025" side="right" />
 
             <TimelineEntry
-              side="right"
+              side="left"
               tag="Recommendation"
               title="Recommendation"
               org="From Purvi Patel, Regional Manager (Canada), University of Guelph"
@@ -913,10 +862,12 @@ export default function PageContent() {
               </Box>
             </TimelineEntry>
 
-            <CourseTermEntry label="Winter 2026" side="left" />
+            <YearMarker year="2026" />
+
+            <CourseTermEntry label="Winter 2026" side="right" />
 
             <TimelineEntry
-              side="right"
+              side="left"
               tag="Co-op"
               title="Software Engineer"
               org="Pepper"
@@ -937,12 +888,14 @@ export default function PageContent() {
               />
             </TimelineEntry>
 
-            <CourseTermEntry label="Summer 2026" side="left" />
+            <CourseTermEntry label="Summer 2026" side="right" />
 
-            <CourseTermEntry label="Fall 2026" side="right" />
+            <CourseTermEntry label="Fall 2026" side="left" />
+
+            <YearMarker year="2027" />
 
             <TimelineEntry
-              side="left"
+              side="right"
               tag="Upcoming"
               title="Winter 2027"
               org="University of Guelph"
@@ -953,21 +906,6 @@ export default function PageContent() {
             </TimelineEntry>
           </Box>
         </Container>
-      </Box>
-
-      {/* Projects */}
-      <Box id="projects" sx={{ py: { xs: 10, md: 16 }, background: projectsBg, position: "relative", zIndex: 1 }}>
-        <Reveal>
-        <Container maxWidth="md">
-          <Typography
-            variant="h2"
-            sx={{ color: "#fff", textAlign: "center", mb: 6, fontSize: { xs: "2rem", md: "2.75rem" }, textShadow }}
-          >
-            Projects
-          </Typography>
-          <ProjectsGrid />
-        </Container>
-        </Reveal>
       </Box>
 
       {/* Contact */}

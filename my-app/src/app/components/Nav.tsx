@@ -15,15 +15,26 @@ import MenuIcon from "@mui/icons-material/Menu";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import { skyColor } from "./styles";
+import { useJourneyFilter, type JourneyFilter } from "./JourneyFilterContext";
 
-const sections = [
-  { id: "home", label: "Home" },
-  { id: "about", label: "About Me" },
-  { id: "skills", label: "Skills" },
-  { id: "experience", label: "My Journey" },
-  { id: "projects", label: "Projects" },
-  { id: "contact", label: "Contact" },
+// Skills and Projects don't have their own sections anymore — everything
+// lives on the Journey timeline. Clicking them filters the timeline down
+// to matching entries instead of scrolling to a dedicated block; clicking
+// "My Journey" itself clears any active filter.
+type NavItem =
+  | { kind: "scroll"; id: string; label: string }
+  | { kind: "filter"; filter: JourneyFilter; label: string };
+
+const navItems: NavItem[] = [
+  { kind: "scroll", id: "home", label: "Home" },
+  { kind: "scroll", id: "about", label: "About Me" },
+  { kind: "filter", filter: "skills", label: "Skills" },
+  { kind: "scroll", id: "experience", label: "My Journey" },
+  { kind: "filter", filter: "projects", label: "Projects" },
+  { kind: "scroll", id: "contact", label: "Contact" },
 ];
+
+const scrollIds = navItems.filter((i): i is Extract<NavItem, { kind: "scroll" }> => i.kind === "scroll").map((i) => i.id);
 
 export default function Nav() {
   const theme = useTheme();
@@ -31,6 +42,7 @@ export default function Nav() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeId, setActiveId] = useState("home");
   const [scrolled, setScrolled] = useState(false);
+  const { filter, setFilter } = useJourneyFilter();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -45,7 +57,7 @@ export default function Nav() {
       },
       { rootMargin: "-45% 0px -45% 0px" }
     );
-    sections.forEach(({ id }) => {
+    scrollIds.forEach((id) => {
       const el = document.getElementById(id);
       if (el) observer.observe(el);
     });
@@ -61,6 +73,18 @@ export default function Nav() {
     setDrawerOpen(false);
   };
 
+  const handleClick = (item: NavItem) => {
+    if (item.kind === "scroll") {
+      if (item.id === "experience") setFilter(null);
+      scrollTo(item.id);
+    } else {
+      setFilter(item.filter);
+      scrollTo("experience");
+    }
+  };
+
+  const isActive = (item: NavItem) => (item.kind === "scroll" ? activeId === item.id && !filter : filter === item.filter);
+
   return (
     <AppBar
       position="fixed"
@@ -74,7 +98,7 @@ export default function Nav() {
     >
       <Toolbar sx={{ justifyContent: "space-between" }}>
         <Box
-          onClick={() => scrollTo("home")}
+          onClick={() => handleClick({ kind: "scroll", id: "home", label: "Home" })}
           sx={{ display: "flex", alignItems: "center", cursor: "pointer" }}
         >
           <Image src="/logo.jpg" alt="Logo" width={40} height={40} style={{ borderRadius: 4 }} />
@@ -87,9 +111,9 @@ export default function Nav() {
             </IconButton>
             <Drawer anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
               <List sx={{ width: 220 }}>
-                {sections.map(({ id, label }) => (
-                  <ListItemButton key={id} selected={activeId === id} onClick={() => scrollTo(id)}>
-                    <ListItemText primary={label} />
+                {navItems.map((item) => (
+                  <ListItemButton key={item.label} selected={isActive(item)} onClick={() => handleClick(item)}>
+                    <ListItemText primary={item.label} />
                   </ListItemButton>
                 ))}
               </List>
@@ -97,17 +121,17 @@ export default function Nav() {
           </>
         ) : (
           <Box sx={{ display: "flex", gap: 1 }}>
-            {sections.map(({ id, label }) => (
+            {navItems.map((item) => (
               <Button
-                key={id}
+                key={item.label}
                 color="inherit"
-                onClick={() => scrollTo(id)}
+                onClick={() => handleClick(item)}
                 sx={{
-                  fontWeight: activeId === id ? 700 : 400,
-                  opacity: activeId === id ? 1 : 0.75,
+                  fontWeight: isActive(item) ? 700 : 400,
+                  opacity: isActive(item) ? 1 : 0.75,
                 }}
               >
-                {label}
+                {item.label}
               </Button>
             ))}
           </Box>

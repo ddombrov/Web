@@ -2,7 +2,6 @@ import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
-import Divider from "@mui/material/Divider";
 import Chip from "@mui/material/Chip";
 import IconButton from "@mui/material/IconButton";
 import List from "@mui/material/List";
@@ -10,14 +9,20 @@ import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
 import Image from "next/image";
 import LinkedInIcon from "@mui/icons-material/LinkedIn";
+import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
+import AddPhotoAlternateOutlinedIcon from "@mui/icons-material/AddPhotoAlternateOutlined";
 import EmailIcon from "@mui/icons-material/Email";
 import GitHubIcon from "./icons/GitHubIcon";
 import Reveal from "./Reveal";
 import Hi from "./Highlight";
 import RevealHeading from "./RevealHeading";
+import CollapsibleEarlyChapters from "./CollapsibleEarlyChapters";
+import TimelineRow from "./TimelineRow";
+import CourseList from "./CourseList";
+import { terms } from "./courseData";
+import { skillIcons } from "./skillIcons";
 import ProjectsGrid from "./ProjectsGrid";
 import ContactForm from "./ContactForm";
-import LinkedInPosts from "./LinkedInPosts";
 import { textShadow, dropShadow, chipSx } from "./styles";
 
 // Each section continues the descent from the hero's dirt-brown fade
@@ -35,11 +40,16 @@ const technologies = [
   "AWS", "Terraform", "Hasura", "Docker", "Fastify", "Git", "PostgreSQL", "Firebase", "Supabase", "Pandas",
 ];
 
+function skillIcon(label: string) {
+  const Icon = skillIcons[label];
+  return Icon ? <Icon size={14} /> : undefined;
+}
+
 function SkillChips({ items }: { items: string[] }) {
   return (
     <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1.5 }}>
       {items.map((s) => (
-        <Chip key={s} label={s} size="small" variant="outlined" sx={chipSx} />
+        <Chip key={s} label={s} size="small" variant="outlined" icon={skillIcon(s)} sx={chipSx} />
       ))}
     </Box>
   );
@@ -67,66 +77,185 @@ function FloatingSkillChips({ items }: { items: string[] }) {
   return (
     <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
       {items.map((s, i) => (
-        <Chip key={s} label={s} variant="outlined" sx={{ ...chipSx, ...floatSx(i) }} />
+        <Chip key={s} label={s} variant="outlined" icon={skillIcon(s)} sx={{ ...chipSx, ...floatSx(i) }} />
       ))}
     </Box>
   );
 }
 
-// Vertical timeline entry: a dot + connecting line beside the content,
-// instead of a repeated heading/paragraph block for every role.
+// Every kind of milestone (education, club, co-op, award, certification,
+// volunteer role, recommendation) renders through this same entry so the
+// whole university journey reads as one continuous, chronologically
+// ordered, alternating line. Each entry lives in its own hoverable card,
+// slides in from the side it sits on as it scrolls into view and slides
+// back out on the way past (once={false}), and its date is shown on the
+// rail rather than inside the card — the card itself carries only what
+// happened, not when.
 function TimelineEntry({
   logo,
   logoAlt,
+  tag,
   title,
-  subtitle,
-  skills,
+  org,
+  location,
+  startDate,
+  endDate,
+  companyUrl,
+  githubUrl,
+  skills = [],
+  side = "left",
   isLast = false,
+  aside,
   children,
 }: {
   logo?: string;
   logoAlt?: string;
+  tag?: string;
   title: string;
-  subtitle: string;
-  skills: string[];
+  org?: string;
+  location?: string;
+  startDate: string;
+  endDate?: string;
+  companyUrl?: string;
+  githubUrl?: string;
+  skills?: string[];
+  side?: "left" | "right";
   isLast?: boolean;
-  children: React.ReactNode;
+  aside?: React.ReactNode;
+  children?: React.ReactNode;
 }) {
   return (
-    <Box sx={{ display: "flex", gap: { xs: 2, md: 3 } }}>
-      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", pt: 0.75 }}>
+    <TimelineRow side={side} startDate={startDate} endDate={endDate} isLast={isLast} aside={aside}>
+      <Reveal direction={side} once={false}>
         <Box
           sx={{
-            width: 16,
-            height: 16,
-            borderRadius: "50%",
-            flexShrink: 0,
-            bgcolor: "secondary.main",
-            boxShadow: "0 0 0 4px rgba(255,255,255,0.08)",
+            bgcolor: "rgba(255,255,255,0.045)",
+            border: "1px solid rgba(255,255,255,0.09)",
+            borderRadius: 3,
+            p: { xs: 2.5, md: 3 },
+            transition: "transform 0.35s cubic-bezier(0.22,1,0.36,1), box-shadow 0.35s ease, border-color 0.35s ease, background-color 0.35s ease",
+            "&:hover": {
+              transform: "translateY(-6px)",
+              boxShadow: "0 20px 40px -16px rgba(0,0,0,0.6)",
+              borderColor: "rgba(255,255,255,0.22)",
+              bgcolor: "rgba(255,255,255,0.075)",
+            },
           }}
-        />
-        {!isLast && <Box sx={{ flex: 1, width: 2, bgcolor: "rgba(255,255,255,0.2)", mt: 1 }} />}
-      </Box>
-      <Box sx={{ flex: 1, pb: 6, minWidth: 0 }}>
-        <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start", flexWrap: "wrap" }}>
-          {logo && (
-            <Image src={logo} alt={logoAlt ?? ""} width={56} height={56} style={{ objectFit: "contain", filter: dropShadow }} />
-          )}
-          <Box sx={{ flex: 1, minWidth: 200 }}>
-            <Typography variant="h5" component="h3" sx={{ color: "#fff", textShadow }}>
-              {title}
-            </Typography>
-            <Typography variant="body2" fontStyle="italic" sx={{ color: "rgba(255,255,255,0.8)", textShadow }}>
-              {subtitle}
-            </Typography>
+        >
+          <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start", flexWrap: "wrap" }}>
+            {logo && (
+              <Image src={logo} alt={logoAlt ?? ""} width={56} height={56} style={{ objectFit: "contain", filter: dropShadow, flexShrink: 0 }} />
+            )}
+            <Box sx={{ flex: 1, minWidth: 200 }}>
+              {tag && (
+                <Typography variant="overline" sx={{ color: "secondary.main", textShadow, letterSpacing: 1.5, display: "block", lineHeight: 1.4 }}>
+                  {tag}
+                </Typography>
+              )}
+              <Typography variant="h5" component="h3" sx={{ color: "#fff", textShadow }}>
+                {title}
+              </Typography>
+              {githubUrl && (
+                <Box
+                  component="a"
+                  href={githubUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                    color: "rgba(255,255,255,0.65)",
+                    textShadow,
+                    mt: 0.25,
+                    "&:hover": { color: "#fff" },
+                  }}
+                >
+                  <GitHubIcon fontSize="small" />
+                  <Typography variant="caption">View on GitHub</Typography>
+                </Box>
+              )}
+              {org && (
+                <Typography variant="body2" fontStyle="italic" sx={{ color: "rgba(255,255,255,0.8)", textShadow }}>
+                  {org}
+                  {companyUrl && (
+                    <Box
+                      component="a"
+                      href={companyUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="Company LinkedIn page"
+                      sx={{ color: "secondary.main", ml: 0.75, verticalAlign: "middle", display: "inline-flex" }}
+                    >
+                      <LinkedInIcon fontSize="small" />
+                    </Box>
+                  )}
+                </Typography>
+              )}
+              {location && (
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.4, mt: 0.5 }}>
+                  <LocationOnOutlinedIcon sx={{ fontSize: 15, color: "rgba(255,255,255,0.55)" }} />
+                  <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.6)", textShadow }}>
+                    {location}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
           </Box>
+
+          {skills.length > 0 && <SkillChips items={skills} />}
+
+          {children}
         </Box>
+      </Reveal>
+    </TimelineRow>
+  );
+}
 
-        <SkillChips items={skills} />
-
-        {children}
-      </Box>
+// An empty, dashed-border slot sitting in the timeline's opposite column —
+// scaffolding for a real photo to be dropped in later, so the page reads as
+// a photo-and-text collage rather than a wall of cards even before any
+// images exist yet.
+function PhotoSlot({ label = "Photo coming soon" }: { label?: string }) {
+  return (
+    <Box
+      sx={{
+        border: "2px dashed rgba(255,255,255,0.16)",
+        borderRadius: 3,
+        aspectRatio: "4 / 3",
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 1,
+        color: "rgba(255,255,255,0.3)",
+      }}
+    >
+      <AddPhotoAlternateOutlinedIcon sx={{ fontSize: 30 }} />
+      <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.35)" }}>
+        {label}
+      </Typography>
     </Box>
+  );
+}
+
+// One academic term's courses, rendered as its own timeline entry at that
+// term's approximate start month so coursework sits alongside whatever
+// else was happening that semester, instead of one giant collapsed blob.
+function CourseTermEntry({ label, side }: { label: string; side: "left" | "right" }) {
+  const term = terms.find((t) => t.label === label);
+  if (!term) return null;
+  return (
+    <TimelineEntry
+      side={side}
+      tag={term.upcoming ? "Upcoming" : "Coursework"}
+      title={term.label}
+      org="University of Guelph"
+      startDate={term.date}
+    >
+      <CourseList courses={term.courses} />
+    </TimelineEntry>
   );
 }
 
@@ -253,77 +382,10 @@ export default function PageContent() {
                 my right leg, and had a fingernail come off.
               </Typography>
 
-              <Divider sx={{ borderColor: "rgba(255,255,255,0.18)", my: 1 }} />
-
-              <Typography variant="h6" sx={{ color: "#fff", textShadow }}>
-                Education
+              <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.75)", textShadow }}>
+                My full education, awards, and work history are laid out as a
+                timeline below, in the order they happened.
               </Typography>
-              <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow }}>
-                University of Guelph — Bachelor of Computing, Software Engineering
-                Co-op (GPA <Hi>3.84</Hi>), Expected May 2027
-              </Typography>
-              <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)", textShadow }}>
-                Minoring in Culture and Technology Studies · Entrance Scholarship
-                (2022) · Dean&apos;s Honour List (2022–2023)
-              </Typography>
-              <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)", textShadow }}>
-                Courses: Data Structures, Algorithms, Software Development,
-                Object-Oriented Programming, Web Development
-              </Typography>
-
-              <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 1 }}>
-                St. Benedict Catholic Secondary School — High School Diploma,
-                STEM, Sep 2018 – Jun 2022
-              </Typography>
-              <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)", textShadow }}>
-                Member of Robotics Club, Coding Club, Math Club, Business Club,
-                and Debate Team · Co-founded Tech Summit, a club discussing
-                current tech news during COVID · Student Council, editing
-                promotional videos and updating the school&apos;s website
-              </Typography>
-
-              <Divider sx={{ borderColor: "rgba(255,255,255,0.18)", my: 1 }} />
-
-              <Typography variant="h6" sx={{ color: "#fff", textShadow }}>
-                Honors &amp; Awards
-              </Typography>
-              <Box
-                sx={{
-                  display: "flex",
-                  gap: 2,
-                  alignItems: "flex-start",
-                  flexDirection: { xs: "column", sm: "row" },
-                  textAlign: "left",
-                }}
-              >
-                <Box
-                  component="a"
-                  href="/coop-nomination.jpg"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  sx={{ flexShrink: 0, mx: { xs: "auto", sm: 0 } }}
-                >
-                  <Image
-                    src="/coop-nomination.jpg"
-                    alt="Co-op Employee of the Year Nomination certificate"
-                    width={110}
-                    height={143}
-                    style={{ borderRadius: 6, objectFit: "cover", filter: dropShadow }}
-                  />
-                </Box>
-                <Box>
-                  <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow }}>
-                    Co-op Employee of the Year Nomination
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)", textShadow }}>
-                    Issued by University of Guelph — Experiential Learning · Aug 2024
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.6)", textShadow }}>
-                    Associated with College of Engineering and Physical Sciences,
-                    University of Guelph
-                  </Typography>
-                </Box>
-              </Box>
             </Stack>
           </Box>
         </Container>
@@ -353,36 +415,6 @@ export default function PageContent() {
               </Typography>
               <FloatingSkillChips items={technologies} />
             </Box>
-            <Box>
-              <Typography variant="h6" sx={{ color: "#fff", textShadow, mb: 2 }}>
-                Certifications
-              </Typography>
-              <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
-                <Box
-                  component="a"
-                  href="/care-ai-cert.png"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  sx={{ flexShrink: 0 }}
-                >
-                  <Image
-                    src="/care-ai-cert.png"
-                    alt="CARE-AI certificate of completion"
-                    width={110}
-                    height={143}
-                    style={{ borderRadius: 6, objectFit: "cover", filter: dropShadow }}
-                  />
-                </Box>
-                <Box>
-                  <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow }}>
-                    Introducing Artificial Intelligence: Training for the Road Ahead
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)", textShadow }}>
-                    CARE-AI, University of Guelph · Issued Jan 2024
-                  </Typography>
-                </Box>
-              </Box>
-            </Box>
           </Stack>
         </Container>
         </Reveal>
@@ -390,98 +422,218 @@ export default function PageContent() {
 
       {/* Experience */}
       <Box id="experience" sx={{ py: { xs: 10, md: 16 }, background: experienceBg, position: "relative", zIndex: 1 }}>
-        <Reveal>
         <Container maxWidth="md">
           <Typography
             variant="h2"
-            sx={{ color: "#fff", textAlign: "center", mb: 6, fontSize: { xs: "2rem", md: "2.75rem" }, textShadow }}
+            sx={{ color: "#fff", textAlign: "center", mb: 1, fontSize: { xs: "2rem", md: "2.75rem" }, textShadow }}
           >
-            Experience
+            My Journey
+          </Typography>
+          <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.8)", textShadow, textAlign: "center", mb: 6 }}>
+            Education, co-ops, clubs, and recognition, in the order they happened.
           </Typography>
           <Box>
+            <CollapsibleEarlyChapters label="2017 – 2023 · Before university (high school, summer jobs)">
+              <TimelineEntry
+                side="left"
+                tag="Job"
+                title="Day Camp Volunteer"
+                org="YMCA Canada"
+                location="Cambridge, Ontario"
+                startDate="Jun 2017"
+                endDate="Jun 2020"
+              >
+                <BulletList
+                  items={[
+                    <>Assisted counsellors with daily camp activities and helped campers who needed support at camp</>,
+                    <>Kept children well-behaved while counsellors supervised children and ran different games and activities</>,
+                    <>Brought counsellors required items for events including craft supplies, lifejackets, and game equipment</>,
+                  ]}
+                />
+              </TimelineEntry>
+
+              <TimelineEntry
+                side="right"
+                tag="Education"
+                title="High School Diploma, STEM"
+                org="St. Benedict Catholic Secondary School"
+                location="Cambridge, Ontario"
+                startDate="Sep 2018"
+                endDate="Jun 2022"
+              >
+                <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
+                  Member of Robotics Club, Coding Club, Math Club, Business Club,
+                  and Debate Team. Co-founded Tech Summit, a club discussing
+                  current tech news during COVID, and served on Student Council
+                  editing promotional videos and updating the school&apos;s website.
+                </Typography>
+              </TimelineEntry>
+
+              <TimelineEntry
+                side="left"
+                tag="Job"
+                title="General Laborer"
+                org="Bloomex Canada"
+                location="Cambridge, Ontario"
+                startDate="Oct 2019"
+                endDate="Feb 2022"
+                aside={<PhotoSlot />}
+              >
+                <BulletList
+                  items={[
+                    <>Kept warehouse inventory organized by sorting boxes of chocolates, cookies, and teddy bears</>,
+                    <>Offloaded new shipments of products from trucks and delivered them to different warehouse locations</>,
+                    <>Built ten different versions of gift baskets with varieties of sweet treats, flowers, and neat packaging</>,
+                  ]}
+                />
+              </TimelineEntry>
+
+              <TimelineEntry
+                side="right"
+                tag="Job"
+                title="Day Camp Counselor"
+                org="YMCA Canada"
+                location="Cambridge, Ontario"
+                startDate="Jun 2020"
+                endDate="Jul 2021"
+              >
+                <BulletList
+                  items={[
+                    <>Supervised campers and ensured the safety of children by explaining camp rules and expected behaviours</>,
+                    <>Took groups hiking, fishing, kayaking, and reminded them about poison ivy and other outdoor dangers</>,
+                    <>Created weekly schedules for counsellor groups, planned craft activities, and organized camp supplies</>,
+                  ]}
+                />
+              </TimelineEntry>
+
+              <TimelineEntry
+                side="left"
+                tag="Job"
+                title="Youth Mentor"
+                org="YMCA Canada"
+                location="Cambridge, Ontario"
+                startDate="Jun 2021"
+                endDate="Jul 2023"
+                aside={<PhotoSlot />}
+              >
+                <BulletList
+                  items={[
+                    <>Taught leaders in training how to work with children, run games, lead activities, and bond with campers</>,
+                    <>Lectured students on safety when working with children and the responsibility associated with their role</>,
+                    <>Evaluated the leaders in training, providing daily feedback, and submitting results to hiring managers</>,
+                  ]}
+                />
+              </TimelineEntry>
+            </CollapsibleEarlyChapters>
+
             <TimelineEntry
-              title="Software Engineer Intern"
-              subtitle="Jan 2026 – Present · Pepper, Toronto, Ontario"
-              skills={["React", "TypeScript", "Python", "AWS Lambda", "Postgres", "Terraform", "Django", "Hasura/GraphQL", "FastAPI", "Fastify"]}
+              side="right"
+              tag="Education"
+              title="Bachelor of Computing, Software Engineering Co-op"
+              org="University of Guelph"
+              location="Guelph, Ontario"
+              startDate="Sep 2022"
+              endDate="Expected May 2027"
             >
               <BulletList
                 items={[
-                  <>Built and shipped an internal EDI operations dashboard giving field engineers real-time visibility into <Hi>921</Hi> suppliers and <Hi>1,667</Hi> integration pipelines processing roughly <Hi>40,000</Hi> EDI runs a day across <Hi>30+</Hi> ERP systems</>,
-                  <>Built a recurring-route planner that was a committed requirement in a <Hi>$99k ARR</Hi> / <Hi>~$297k TCV</Hi> distributor contract close, shipping a sales-rep task manager now covering <Hi>17</Hi> active routes across <Hi>178</Hi> accounts</>,
-                  <>Owned and shipped a multi-tenant credit-application and automated-underwriting platform end to end with FCRA-compliant decisioning, launching a self-serve form builder and reviewer dashboard to <Hi>8</Hi> pilot distributor tenants</>,
-                  <>Designed the customer-facing successor to the EDI dashboard, currently in progress — moving failure alerting from internal-only visibility into the core product</>,
+                  <>Current cumulative GPA <Hi>3.84</Hi>; minoring in Culture and Technology Studies</>,
+                  <>Entrance Scholarship (2022)</>,
+                  <>Dean&apos;s Honour List (2022–2023)</>,
                 ]}
               />
             </TimelineEntry>
 
+            <CourseTermEntry label="Fall 2022" side="left" />
+
             <TimelineEntry
-              title="Software Engineer Intern"
-              subtitle="Feb 2025 – Dec 2025 · Lapis, Toronto, Ontario"
-              skills={["Next.js", "TypeScript", "Supabase", "Google OAuth", "Microsoft OAuth", "CRON"]}
+              logo="/socisLogo.png"
+              logoAlt="SOCIS logo"
+              side="right"
+              tag="Club"
+              title="Marketing Committee Member"
+              org="SOCIS"
+              location="Guelph, Ontario"
+              startDate="Sep 2022"
+              endDate="Apr 2023"
+              skills={["Problem Solving"]}
+              aside={<PhotoSlot />}
             >
               <BulletList
                 items={[
-                  <>Architected a high-performance company dashboard, cutting load times from <Hi>4.9s</Hi> to <Hi>200ms</Hi></>,
-                  <>Integrated Notion and OneDrive APIs, allowing clients to import databases and files in a single click</>,
-                  <>Implemented secure authentication with Google and Microsoft OAuth and custom role-based access control</>,
-                  <>Automated nightly Supabase backups with CRON jobs, protecting <Hi>1.6 TB</Hi> of client data across <Hi>31</Hi> accounts</>,
+                  <>Ran the largest event of the year, with an attendance of <Hi>50+</Hi> people for a trivia night</>,
+                  <>Independently planned a marketing campaign for events by creating videos, posts, and flyers</>,
                 ]}
               />
             </TimelineEntry>
 
-            <TimelineEntry
-              title="Software Engineer Intern"
-              subtitle="May 2025 – Aug 2025 · Canadian Institute for Health Information, Toronto, Ontario"
-              skills={["Python", "Spring Boot", "UML"]}
-            >
-              <BulletList
-                items={[
-                  <>Streamlined <Hi>80%</Hi> of manual data processing by developing Python scripts for healthcare data model conversions</>,
-                  <>Designed AI workflows for healthcare data analysis, automating <Hi>19</Hi> weekly review tasks for the data team</>,
-                  <>Contributed to national UML diagram standards adopted by <Hi>6,000+</Hi> healthcare facilities across Canada</>,
-                  <>Migrated a legacy healthcare data reporting service to Spring Boot, reducing service maintenance costs by <Hi>30%</Hi></>,
-                ]}
-              />
-            </TimelineEntry>
+            <CourseTermEntry label="Winter 2023" side="left" />
 
             <TimelineEntry
-              title="Marketing Team Member (Volunteer)"
-              subtitle="Jan 2025 – Apr 2025 · Guelph Coding Community, Guelph, Ontario"
-              skills={[]}
+              side="right"
+              tag="Project"
+              title="Baby Names Frequency Tracker"
+              startDate="Jan 2023"
+              endDate="Apr 2023"
+              githubUrl="https://github.com/ddombrov/BabyNamesFrequencyProject"
+              skills={["Python", "Pandas"]}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
-                Volunteered on the marketing team promoting the Guelph Coding
-                Community&apos;s events and initiatives to local students.
+                In Software Design II, me and a group of four collaborated
+                developed a user-friendly menu together, that allowed users to
+                track names&apos; popularities across time and determine their
+                ethnicities. This was implemented by normalizing CSV files to a
+                standard format and converting them to Pandas data frames in
+                Python.
               </Typography>
             </TimelineEntry>
 
             <TimelineEntry
-              title="Software Engineer Intern"
-              subtitle="May 2024 – Aug 2024 · University of Guelph, Guelph, Ontario"
-              skills={["Python", "R", "Plotly", "BeautifulSoup", "Selenium"]}
+              logo="/socisLogo.png"
+              logoAlt="SOCIS logo"
+              side="left"
+              tag="Club"
+              title="Vice President Communications"
+              org="SOCIS"
+              location="Guelph, Ontario"
+              startDate="Apr 2023"
+              endDate="Dec 2023"
             >
               <BulletList
                 items={[
-                  <>Launched an accessible platform for collaboration on disease research modeling used by <Hi>70+</Hi> faculty members</>,
-                  <>Built interactive Plotly and R dashboards for hospitalization predictions, supporting <Hi>3</Hi> active research studies</>,
-                  <>Accelerated faculty data collection by <Hi>99%</Hi> by engineering a web scraper, extracting data from <Hi>1,000+</Hi> Google Scholar pages in minutes instead of days of manual entry</>,
+                  <>Ran study nights, guest speaker talks, Makerspace technology workshops, and other fun events</>,
+                  <>Successfully promoted the club in new ways, increasing attendance to <Hi>70+</Hi> people per event</>,
+                  <>Managed the club&apos;s online presence through Instagram and Discord; revamped the outdated website</>,
+                  <>Designed promotional Instagram posts and physical flyers to market upcoming events and initiatives</>,
                 ]}
               />
             </TimelineEntry>
 
+            <CourseTermEntry label="Summer 2023" side="right" />
+
+            <CourseTermEntry label="Fall 2023" side="left" />
+
             <TimelineEntry
               logo="/gdscLogo.png"
               logoAlt="GDSC logo"
-              title="Director of Technical Events"
-              subtitle="Sep 2022 – Aug 2023 · Google Developer Student Club, Guelph, Ontario"
-              skills={["Git", "Flutter", "React", "Gemini AI"]}
+              side="right"
+              tag="Club"
+              title="Marketing and Publicity Director"
+              org="Google Developer Student Club"
+              location="Guelph, Ontario"
+              startDate="Sep 2023"
+              endDate="May 2024"
+              skills={["JavaScript", "HTML", "Firebase"]}
+              aside={<PhotoSlot />}
             >
               <BulletList
                 items={[
-                  <>Organized a <Hi>250+</Hi> person hackathon with <Hi>45</Hi> project submissions and speakers from Google and Echo3D</>,
-                  <>Strengthened technical skills across <Hi>200+</Hi> students through workshops on Git, Flutter, React, and Gemini AI</>,
-                  <>Grew club membership from <Hi>0</Hi> to <Hi>300+</Hi> students, making it the largest computer science club on campus</>,
-                  <>Secured <Hi>$30,000+</Hi> in sponsorships from <Hi>14</Hi> companies to fund <Hi>25+</Hi> technical events and hackathon prizes</>,
+                  <>Worked with other executives to plan various technical events averaging <Hi>100+</Hi> attendance</>,
+                  <>Led workshops introducing APIs and front-end implementation with JavaScript and HTML</>,
+                  <>Taught students how to use and incorporate Google&apos;s Firebase technology into their websites</>,
+                  <>Volunteered at Google DevFest Waterloo 2023, a <Hi>300</Hi>-person event, alongside other community leaders</>,
+                  <>Marketed all club activity on Instagram and Discord, and managed a team of designers</>,
+                  <>Organized a <Hi>200+</Hi> participant hackathon, raising over <Hi>$25,000</Hi> in funding for <Hi>25+</Hi> events</>,
                 ]}
               />
             </TimelineEntry>
@@ -489,20 +641,28 @@ export default function PageContent() {
             <TimelineEntry
               logo="/socisLogo.png"
               logoAlt="SOCIS logo"
+              side="left"
+              tag="Club"
               title="SOCIS President"
-              subtitle="Dec 2023 – Present · Guelph, Ontario, Canada"
-              skills={["Leadership", "Budgeting", "Event Planning"]}
-              isLast
+              location="Guelph, Ontario"
+              startDate="Dec 2023"
+              endDate="May 2024"
+              skills={["Time Management", "Public Speaking", "Leadership", "Budgeting", "Event Planning"]}
             >
+              <BulletList
+                items={[
+                  <>Ran <Hi>16</Hi> different events throughout one semester, including coding competitions and circuitry events</>,
+                  <>Attended faculty meetings to advocate for computing students on curriculum changes</>,
+                  <>Led the organization&apos;s executives and staff, managing <Hi>30</Hi> members across <Hi>5</Hi> committees</>,
+                  <>Spearheaded a new initiative to create websites for other university clubs to generate revenue</>,
+                ]}
+              />
+
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
-                I took over as the president of the Society of Computing and
-                Informational Science during a chaotic time for the club and I
-                began rebuilding the club. I led the executive team to success
-                by organizing meetings, meticulously planning out the budget,
-                and advocating for computing students at faculty curriculum
-                meetings. The club also launched brand new computing merch to
-                represent Guelph Computing, which was very popular with
-                students.
+                I took over as president during a chaotic time for the club and
+                began rebuilding it, meticulously planning out the budget and
+                launching brand new computing merch to represent Guelph
+                Computing, which was very popular with students.
               </Typography>
 
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
@@ -531,18 +691,268 @@ export default function PageContent() {
                 </Typography>
               </Box>
             </TimelineEntry>
-          </Box>
 
-          <Stack spacing={4} sx={{ mt: 8 }}>
-            <Typography variant="h5" sx={{ color: "#fff", textShadow, textAlign: "center" }}>
-              Recommendations
-            </Typography>
-            {recommendations.map((r) => (
-              <RecommendationCard key={r.name} {...r} />
-            ))}
-          </Stack>
+            <CourseTermEntry label="Winter 2024" side="right" />
+
+            <TimelineEntry
+              side="left"
+              tag="Certification"
+              title="Introducing Artificial Intelligence: Training for the Road Ahead"
+              org="CARE-AI, University of Guelph"
+              startDate="Jan 2024"
+            >
+              <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start", mt: 2 }}>
+                <Box component="a" href="/care-ai-cert.png" target="_blank" rel="noopener noreferrer" sx={{ flexShrink: 0 }}>
+                  <Image
+                    src="/care-ai-cert.png"
+                    alt="CARE-AI certificate of completion"
+                    width={90}
+                    height={117}
+                    style={{ borderRadius: 6, objectFit: "cover", filter: dropShadow }}
+                  />
+                </Box>
+                <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)", textShadow }}>
+                  Completed through the Centre for Advancing Responsible &amp;
+                  Ethical Artificial Intelligence at the University of Guelph.
+                </Typography>
+              </Box>
+            </TimelineEntry>
+
+            <TimelineEntry
+              side="right"
+              tag="Project"
+              title="Billiards Pool Game Simulator"
+              startDate="Jan 2024"
+              endDate="Apr 2024"
+              githubUrl="https://github.com/ddombrov/Billards-Game"
+              skills={["C", "Python", "JavaScript", "jQuery", "SQL", "HTML", "CSS"]}
+            >
+              <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
+                In CIS*2750, Software Systems Development and Integration, I
+                programmed a C physics library to simulate billiards ball
+                collisions, and then I integrated the program with a
+                Python-based web server to dynamically generate SVG images
+                onto an HTML website.
+              </Typography>
+            </TimelineEntry>
+
+            <CourseTermEntry label="Summer 2024" side="left" />
+
+            <TimelineEntry
+              side="right"
+              tag="Co-op"
+              title="Software Engineer"
+              org="College of Engineering and Physical Sciences, University of Guelph"
+              location="Guelph, Ontario"
+              startDate="May 2024"
+              endDate="Aug 2024"
+              companyUrl="https://www.linkedin.com/company/ccmps-uofg"
+              skills={["Python", "R", "Plotly", "BeautifulSoup", "Selenium"]}
+              aside={
+                <Stack spacing={3}>
+                  <RecommendationCard {...recommendations[2]} />
+                  <RecommendationCard {...recommendations[1]} />
+                </Stack>
+              }
+            >
+              <BulletList
+                items={[
+                  <>Launched an accessible platform for collaboration on disease research modeling used by <Hi>70+</Hi> faculty members</>,
+                  <>Built interactive Plotly and R dashboards for hospitalization predictions, supporting <Hi>3</Hi> active research studies</>,
+                  <>Accelerated faculty data collection by <Hi>99%</Hi> by engineering a web scraper, extracting data from <Hi>1,000+</Hi> Google Scholar pages in minutes instead of days of manual entry</>,
+                ]}
+              />
+
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 2,
+                  alignItems: "flex-start",
+                  flexDirection: { xs: "column", sm: "row" },
+                  mt: 3,
+                }}
+              >
+                <Box
+                  component="a"
+                  href="/coop-nomination.jpg"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{ flexShrink: 0, mx: { xs: "auto", sm: 0 } }}
+                >
+                  <Image
+                    src="/coop-nomination.jpg"
+                    alt="Co-op Employee of the Year Nomination certificate"
+                    width={90}
+                    height={117}
+                    style={{ borderRadius: 6, objectFit: "cover", filter: dropShadow }}
+                  />
+                </Box>
+                <Box>
+                  <Typography variant="body2" sx={{ color: "#EDEFF3", textShadow }}>
+                    Nominated for Co-op Employee of the Year by University of
+                    Guelph Experiential Learning, Aug 2024, on behalf of the
+                    College of Engineering and Physical Sciences.
+                  </Typography>
+                </Box>
+              </Box>
+            </TimelineEntry>
+
+            <TimelineEntry
+              side="left"
+              tag="Project"
+              title="AI Voice Caller"
+              startDate="Aug 2024"
+              githubUrl="https://github.com/ddombrov/HackThe6ix2024"
+              skills={["Next.js", "OpenAI", "ElevenLabs", "Python", "React", "Firebase", "Material UI"]}
+            >
+              <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
+                Produced an AI-driven app to automate voice calls to businesses
+                and clients for booking appointments or meetings. Synthesized
+                emotional dialogue through OpenAI and ElevenLabs APIs, using
+                Twilio to deliver calls to users. Built at the Hack the 6ix
+                2024 hackathon.
+              </Typography>
+            </TimelineEntry>
+
+            <CourseTermEntry label="Fall 2024" side="right" />
+
+            <TimelineEntry
+              side="left"
+              tag="Co-op"
+              title="IT Support Technician"
+              org="City of Guelph"
+              location="Guelph, Ontario"
+              startDate="Sep 2024"
+              endDate="Dec 2024"
+              skills={["Time Management", "Public Speaking", "Active Directory"]}
+              aside={<PhotoSlot />}
+            >
+              <BulletList
+                items={[
+                  <>Provided IT support for <Hi>350+</Hi> City of Guelph staff across <Hi>10+</Hi> departments, ensuring smooth daily operations</>,
+                  <>Answered calls to deliver remote assistance to users and addressed in-person inquiries regarding device repairs</>,
+                  <>Facilitated the onboarding of <Hi>125+</Hi> new hires by setting them up on the city network, installing operating systems and software, and disabling accounts for terminated staff using Active Directory</>,
+                ]}
+              />
+            </TimelineEntry>
+
+            <CourseTermEntry label="Winter 2025" side="right" />
+
+            <TimelineEntry
+              side="left"
+              tag="Volunteer"
+              title="Marketing Team Member"
+              org="Guelph Coding Community"
+              location="Guelph, Ontario"
+              startDate="Jan 2025"
+              endDate="Apr 2025"
+            >
+              <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
+                Volunteered on the marketing team promoting the Guelph Coding
+                Community&apos;s events and initiatives to local students.
+              </Typography>
+            </TimelineEntry>
+
+            <TimelineEntry
+              side="right"
+              tag="Part-time"
+              title="Head of Infrastructure: Full Stack Developer"
+              org="Lapis"
+              location="Guelph, Ontario"
+              startDate="Feb 2025"
+              endDate="Dec 2025"
+              companyUrl="https://www.linkedin.com/company/lapis-research"
+              skills={["Next.js", "TypeScript", "Supabase", "Google OAuth", "Microsoft OAuth", "CRON"]}
+              aside={<PhotoSlot />}
+            >
+              <BulletList
+                items={[
+                  <>Architected a high-performance company dashboard, cutting load times from <Hi>4.9s</Hi> to <Hi>200ms</Hi></>,
+                  <>Integrated Notion and OneDrive APIs, allowing clients to import databases and files in a single click</>,
+                  <>Implemented secure authentication with Google and Microsoft OAuth and custom role-based access control</>,
+                  <>Automated nightly Supabase backups with CRON jobs, protecting <Hi>1.6 TB</Hi> of client data across <Hi>31</Hi> accounts</>,
+                ]}
+              />
+            </TimelineEntry>
+
+            <CourseTermEntry label="Summer 2025" side="left" />
+
+            <TimelineEntry
+              side="right"
+              tag="Co-op"
+              title="Software Engineer"
+              org="Canadian Institute for Health Information"
+              location="North York, Ontario"
+              startDate="May 2025"
+              endDate="Aug 2025"
+              companyUrl="https://www.linkedin.com/company/canadian-institute-for-health-information"
+              skills={["Python", "Spring Boot", "UML"]}
+              aside={<PhotoSlot />}
+            >
+              <BulletList
+                items={[
+                  <>Streamlined <Hi>80%</Hi> of manual data processing by developing Python scripts for healthcare data model conversions</>,
+                  <>Designed AI workflows for healthcare data analysis, automating <Hi>19</Hi> weekly review tasks for the data team</>,
+                  <>Contributed to national UML diagram standards adopted by <Hi>6,000+</Hi> healthcare facilities across Canada</>,
+                  <>Migrated a legacy healthcare data reporting service to Spring Boot, reducing service maintenance costs by <Hi>30%</Hi></>,
+                ]}
+              />
+            </TimelineEntry>
+
+            <CourseTermEntry label="Fall 2025" side="left" />
+
+            <TimelineEntry
+              side="right"
+              tag="Recommendation"
+              title="Recommendation"
+              org="From Purvi Patel, Regional Manager (Canada), University of Guelph"
+              startDate="Dec 2025"
+            >
+              <Box sx={{ mt: 2 }}>
+                <RecommendationCard {...recommendations[0]} />
+              </Box>
+            </TimelineEntry>
+
+            <CourseTermEntry label="Winter 2026" side="left" />
+
+            <TimelineEntry
+              side="right"
+              tag="Co-op"
+              title="Software Engineer"
+              org="Pepper"
+              location="Toronto, Ontario"
+              startDate="Jan 2026"
+              endDate="Present"
+              companyUrl="https://www.linkedin.com/company/usepepper"
+              skills={["React", "TypeScript", "Python", "AWS Lambda", "Postgres", "Terraform", "Django", "Hasura/GraphQL", "FastAPI", "Fastify"]}
+              aside={<PhotoSlot />}
+            >
+              <BulletList
+                items={[
+                  <>Built and shipped an internal EDI operations dashboard giving field engineers real-time visibility into <Hi>921</Hi> suppliers and <Hi>1,667</Hi> integration pipelines processing roughly <Hi>40,000</Hi> EDI runs a day across <Hi>30+</Hi> ERP systems</>,
+                  <>Built a recurring-route planner that was a committed requirement in a <Hi>$99k ARR</Hi> / <Hi>~$297k TCV</Hi> distributor contract close, shipping a sales-rep task manager now covering <Hi>17</Hi> active routes across <Hi>178</Hi> accounts</>,
+                  <>Owned and shipped a multi-tenant credit-application and automated-underwriting platform end to end with FCRA-compliant decisioning, launching a self-serve form builder and reviewer dashboard to <Hi>8</Hi> pilot distributor tenants</>,
+                  <>Designed the customer-facing successor to the EDI dashboard, currently in progress — moving failure alerting from internal-only visibility into the core product</>,
+                ]}
+              />
+            </TimelineEntry>
+
+            <CourseTermEntry label="Summer 2026" side="left" />
+
+            <CourseTermEntry label="Fall 2026" side="right" />
+
+            <TimelineEntry
+              side="left"
+              tag="Upcoming"
+              title="Winter 2027"
+              org="University of Guelph"
+              startDate="Jan 2027"
+              isLast
+            >
+              <CourseList courses={terms.find((t) => t.label === "Winter 2027")!.courses} />
+            </TimelineEntry>
+          </Box>
         </Container>
-        </Reveal>
       </Box>
 
       {/* Projects */}
@@ -570,7 +980,6 @@ export default function PageContent() {
           <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mb: 4 }}>
             Feel free to check out my GitHub, LinkedIn, or send me a message below.
           </Typography>
-          <LinkedInPosts />
           <ContactForm />
           <Stack direction="row" spacing={1} justifyContent="center" sx={{ mt: 5, mb: 4 }}>
             <IconButton component="a" href="https://github.com/ddombrov" aria-label="GitHub" sx={{ color: "#fff" }}>

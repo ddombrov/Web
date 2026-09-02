@@ -4,6 +4,8 @@ import Chip from "@mui/material/Chip";
 import Image from "next/image";
 import { textShadow, chipSx } from "./styles";
 import Hi from "./Highlight";
+import GitHubIcon from "./icons/GitHubIcon";
+import Reveal from "./Reveal";
 
 type ProjectImage = { src: string; alt: string; width: number; height: number };
 
@@ -13,6 +15,7 @@ type Project = {
   skills: string[];
   description: React.ReactNode;
   images: ProjectImage[];
+  githubUrl: string;
   // Gradient stand-in for a screenshot, used until a real one is provided.
   placeholderGradient: string;
 };
@@ -30,6 +33,7 @@ const projects: Project[] = [
       </>
     ),
     images: [],
+    githubUrl: "https://github.com/ddombrov/oh_scanada",
     placeholderGradient: "linear-gradient(135deg, #3B331D 0%, #D98E33 100%)",
   },
   {
@@ -44,6 +48,7 @@ const projects: Project[] = [
       </>
     ),
     images: [],
+    githubUrl: "https://github.com/ddombrov/HackThe6ix2024",
     placeholderGradient: "linear-gradient(135deg, #1B2A41 0%, #7498C7 100%)",
   },
   {
@@ -60,6 +65,7 @@ const projects: Project[] = [
       </>
     ),
     images: [{ src: "/babyNames.png", alt: "Baby Names Image", width: 600, height: 338 }],
+    githubUrl: "https://github.com/ddombrov/BabyNamesFrequencyProject",
     placeholderGradient: "linear-gradient(135deg, #241F10 0%, #4C6289 100%)",
   },
   {
@@ -80,6 +86,7 @@ const projects: Project[] = [
       { src: "/table-2.svg", alt: "Table 2", width: 300, height: 300 },
       { src: "/table-3.svg", alt: "Table 3", width: 300, height: 300 },
     ],
+    githubUrl: "https://github.com/ddombrov/Billards-Game",
     placeholderGradient: "linear-gradient(135deg, #332D14 0%, #6E7F9C 100%)",
   },
 ];
@@ -93,14 +100,17 @@ export default function ProjectsGrid() {
         gap: 4,
       }}
     >
-      {projects.map((p) => (
+      {projects.map((p, i) => (
+        <Reveal key={p.title} direction="up" delay={i * 0.08}>
         <Box
-          key={p.title}
           sx={{
-            transition: "transform 0.3s ease, box-shadow 0.3s ease",
+            transition: "transform 0.4s cubic-bezier(0.22,1,0.36,1), box-shadow 0.4s ease",
+            borderRadius: 2,
             "&:hover": {
-              transform: "translateY(-6px)",
-              "& .project-media img": { transform: "scale(1.05)" },
+              transform: "translateY(-10px) scale(1.02)",
+              boxShadow: "0 22px 44px -14px rgba(0,0,0,0.6)",
+              "& .project-media img": { transform: "scale(1.08)" },
+              "& .project-media": { boxShadow: "0 0 0 2px rgba(255,255,255,0.35)" },
             },
           }}
         >
@@ -113,6 +123,7 @@ export default function ProjectsGrid() {
               borderRadius: 2,
               overflow: "hidden",
               background: p.placeholderGradient,
+              transition: "box-shadow 0.4s ease",
             }}
           >
             {p.images.length === 1 ? (
@@ -142,9 +153,21 @@ export default function ProjectsGrid() {
             ) : null}
           </Box>
 
-          <Typography variant="h6" component="h3" sx={{ color: "#fff", textShadow, mt: 2 }}>
-            {p.title}
-          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 2 }}>
+            <Typography variant="h6" component="h3" sx={{ color: "#fff", textShadow }}>
+              {p.title}
+            </Typography>
+            <Box
+              component="a"
+              href={p.githubUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`${p.title} on GitHub`}
+              sx={{ color: "rgba(255,255,255,0.75)", display: "inline-flex", "&:hover": { color: "#fff" } }}
+            >
+              <GitHubIcon fontSize="small" />
+            </Box>
+          </Box>
           {p.meta && (
             <Typography variant="body2" fontStyle="italic" sx={{ color: "rgba(255,255,255,0.8)", textShadow }}>
               {p.meta}
@@ -159,6 +182,7 @@ export default function ProjectsGrid() {
             {p.description}
           </Typography>
         </Box>
+        </Reveal>
       ))}
     </Box>
   );

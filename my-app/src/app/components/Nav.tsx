@@ -20,7 +20,7 @@ const sections = [
   { id: "home", label: "Home" },
   { id: "about", label: "About Me" },
   { id: "skills", label: "Skills" },
-  { id: "experience", label: "Experience" },
+  { id: "experience", label: "My Journey" },
   { id: "projects", label: "Projects" },
   { id: "contact", label: "Contact" },
 ];

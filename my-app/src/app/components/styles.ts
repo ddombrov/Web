@@ -10,4 +10,5 @@ export const chipSx = {
   color: "#fff",
   borderColor: "rgba(255,255,255,0.4)",
   textShadow,
+  "& .MuiChip-icon": { color: "#fff" },
 };

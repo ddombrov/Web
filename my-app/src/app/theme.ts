@@ -29,8 +29,17 @@ const theme = createTheme({
   components: {
     MuiCssBaseline: {
       styleOverrides: {
+        html: {
+          // Reveal slides timeline entries in with a translateX before they
+          // scroll into view; that transform paints outside the element's
+          // normal box, which can widen the page's scrollable area even
+          // though the shifted content itself is never visible. Clipping
+          // horizontally here contains it without affecting vertical scroll.
+          overflowX: "hidden",
+        },
         body: {
           backgroundColor: "transparent",
+          overflowX: "hidden",
         },
       },
     },

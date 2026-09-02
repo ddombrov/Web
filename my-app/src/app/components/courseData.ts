@@ -62,16 +62,12 @@ export const terms: Term[] = [
   {
     label: "Summer 2024",
     date: "May 2024",
-    courses: [
-      { code: "COOP*1000", name: "Work Term I", description: "A semester-long paid work experience relevant to the student's program." },
-    ],
+    courses: [],
   },
   {
     label: "Fall 2024",
     date: "Sep 2024",
-    courses: [
-      { code: "COOP*2000", name: "Work Term II", description: "A semester-long paid work experience relevant to the student's program." },
-    ],
+    courses: [],
   },
   {
     label: "Winter 2025",
@@ -87,9 +83,7 @@ export const terms: Term[] = [
   {
     label: "Summer 2025",
     date: "May 2025",
-    courses: [
-      { code: "COOP*3000", name: "Work Term III", description: "A semester-long paid work experience relevant to the student's program." },
-    ],
+    courses: [],
   },
   {
     label: "Fall 2025",
@@ -107,7 +101,6 @@ export const terms: Term[] = [
     date: "Jan 2026",
     courses: [
       { code: "CIS*3700", name: "Introduction to Intelligent Systems", description: "Core AI topics: agents/environments, search, knowledge representation, reasoning, and learning, using logic as a common formalism." },
-      { code: "COOP*4000", name: "Work Term IV", description: "A semester-long paid work experience relevant to the student's program." },
     ],
   },
   {
@@ -115,7 +108,6 @@ export const terms: Term[] = [
     date: "May 2026",
     courses: [
       { code: "ENVS*2210", name: "Apiculture and Honey Bee Biology", description: "Beekeeping fundamentals: honey bee biology/behaviour, honey production management, hive products, pests, and bees as agricultural pollinators." },
-      { code: "COOP*5000", name: "Work Term V", description: "A semester-long paid work experience relevant to the student's program." },
     ],
   },
   {

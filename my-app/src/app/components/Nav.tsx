@@ -28,8 +28,9 @@ type NavItem =
 const navItems: NavItem[] = [
   { kind: "scroll", id: "home", label: "Home" },
   { kind: "scroll", id: "about", label: "About Me" },
-  { kind: "filter", filter: "skills", label: "Skills" },
   { kind: "scroll", id: "experience", label: "My Journey" },
+  { kind: "filter", filter: "skills", label: "Skills" },
+  { kind: "filter", filter: "experience", label: "Experience" },
   { kind: "filter", filter: "projects", label: "Projects" },
   { kind: "scroll", id: "contact", label: "Contact" },
 ];
@@ -75,9 +76,21 @@ export default function Nav() {
 
   const handleClick = (item: NavItem) => {
     if (item.kind === "scroll") {
-      if (item.id === "experience") setFilter(null);
-      scrollTo(item.id);
+      // Home, About Me, My Journey, and Contact are real places on the
+      // page — navigating to any of them always closes whatever filter
+      // gallery is open, the same way the overlay's own close button does.
+      // While a filter is active, every matching entry's normal timeline
+      // slot is collapsed to an empty placeholder (its card is portaled
+      // into the gallery instead), so the page is much shorter than its
+      // real height until that clears. Scrolling in the very same tick as
+      // setFilter(null) would target that stale, too-short document —
+      // waiting two frames lets React's re-render (and the layout snap
+      // back to full height) land first, so the scroll target is correct.
+      setFilter(null);
+      requestAnimationFrame(() => requestAnimationFrame(() => scrollTo(item.id)));
     } else {
+      // Skills, Experience, and Projects aren't places of their own — they
+      // open a filtered view of the Journey in front of wherever you are.
       setFilter(item.filter);
       scrollTo("experience");
     }

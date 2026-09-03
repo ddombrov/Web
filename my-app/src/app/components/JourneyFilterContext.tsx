@@ -45,6 +45,6 @@ export function tagMatchesFilter(tag: string | undefined, hasSkills: boolean, fi
   if (!filter) return true;
   if (filter === "skills") return hasSkills;
   if (filter === "projects") return tag === "Project";
-  if (filter === "experience") return tag === "Co-op" || tag === "Part-time" || tag === "Volunteer" || tag === "Club";
+  if (filter === "experience") return tag === "Co-op" || tag === "Part-time" || tag === "Volunteer" || tag === "Extracurriculars";
   return true;
 }

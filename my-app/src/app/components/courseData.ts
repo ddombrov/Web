@@ -113,7 +113,6 @@ export const terms: Term[] = [
   {
     label: "Fall 2026",
     date: "Sep 2026",
-    upcoming: true,
     courses: [
       { code: "CIS*4150", name: "Software Reliability & Testing", description: "Systematic testing/verification methods (static & dynamic), reliability prediction, and various testing types (unit, integration, regression, system)." },
       { code: "CIS*3260", name: "Software Design IV", description: "Advanced software architectures, design patterns, modeling methodologies, and evaluating tools/frameworks for scalable systems." },

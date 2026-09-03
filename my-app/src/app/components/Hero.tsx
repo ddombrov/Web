@@ -120,11 +120,11 @@ export default function Hero() {
             "@media (prefers-reduced-motion: reduce)": { animation: "none" },
           }}
         >
-          <Button href="#contact" variant="contained" color="secondary" size="large">
-            Contact Me
-          </Button>
-          <Button href="#about" variant="outlined" size="large" sx={{ color: "#fff", borderColor: "rgba(255,255,255,0.6)" }}>
+          <Button href="#about" variant="contained" color="secondary" size="large">
             About Me
+          </Button>
+          <Button href="#contact" variant="outlined" size="large" sx={{ color: "#fff", borderColor: "rgba(255,255,255,0.6)" }}>
+            Contact Me
           </Button>
         </Stack>
       </Box>

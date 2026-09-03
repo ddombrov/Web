@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, LayoutGroup } from "framer-motion";
 import Container from "@mui/material/Container";
@@ -9,7 +9,6 @@ import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Chip from "@mui/material/Chip";
 import IconButton from "@mui/material/IconButton";
-import Button from "@mui/material/Button";
 import Collapse from "@mui/material/Collapse";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
@@ -17,13 +16,10 @@ import ListItemText from "@mui/material/ListItemText";
 import Image from "next/image";
 import LinkedInIcon from "@mui/icons-material/LinkedIn";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
-import AddPhotoAlternateOutlinedIcon from "@mui/icons-material/AddPhotoAlternateOutlined";
 import EmailIcon from "@mui/icons-material/Email";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import GitHubIcon from "./icons/GitHubIcon";
 import Reveal from "./Reveal";
 import Hi from "./Highlight";
-import RevealHeading from "./RevealHeading";
 import CollapsibleEarlyChapters from "./CollapsibleEarlyChapters";
 import TimelineRow, { YearMarker } from "./TimelineRow";
 import CourseList from "./CourseList";
@@ -41,6 +37,44 @@ function slug(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
+// The same scroll-linked scale-up + darken Hero uses on the mountain photo
+// (and ParallaxBand used before it), for a section's own background image.
+// Ramps from 0 (section just touching the bottom of the viewport) to 1
+// (section's top has reached the top of the viewport) — tied to how far
+// the section has scrolled INTO view, not how far it's scrolled past.
+// That works the same whether there's a lot of page left below it (About)
+// or none at all (Contact, the very last section) — a "past the top"
+// trigger can mathematically never fire for Contact, since the page has
+// no more room to scroll once Contact's short body is fully in view.
+function useSectionZoom() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [progress, setProgress] = useState(0);
+  const rafId = useRef<number | null>(null);
+
+  useEffect(() => {
+    const onScroll = () => {
+      if (rafId.current !== null) return;
+      rafId.current = requestAnimationFrame(() => {
+        const el = ref.current;
+        if (el) {
+          const vh = window.innerHeight;
+          const raw = (vh - el.getBoundingClientRect().top) / vh;
+          setProgress(Math.min(Math.max(raw, 0), 1));
+        }
+        rafId.current = null;
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (rafId.current !== null) cancelAnimationFrame(rafId.current);
+    };
+  }, []);
+
+  return { ref, scale: 1 + progress * 0.3, brightness: 1 - progress * 0.3 };
+}
+
 // Deterministically spreads each entry's flight start time across roughly
 // a second, so cards/chips from different jobs visibly launch one after
 // another instead of every matching element taking off in the same frame
@@ -53,10 +87,102 @@ function launchDelay(id: string, spreadSeconds = 1.1) {
 
 // Each section continues the descent from the hero's dirt-brown fade
 // (#332D14) down toward near-black at Contact, so sections read as distinct
-// stops on one journey rather than one flat color for the whole page.
-const aboutBg = "linear-gradient(180deg, #332D14 0%, #3B331D 100%)";
-const experienceBg = "linear-gradient(180deg, #3B331D 0%, #1A160C 100%)";
-const contactBg = "linear-gradient(180deg, #1A160C 0%, #0F0C07 100%)";
+// stops on one journey rather than one flat color for the whole page. The
+// cave photo is About's own background (same pattern as Hero's mountain
+// photo), and the ocean photo is Contact's own background — each photo is
+// shown in full (no fade tinting its own top/bottom edges); the color
+// transitions live in dedicated Boxes strictly before/after the photo.
+const dirtColorEnd = "#332D14";
+// A stone-gray beat between the hero's dirt brown and the cave photo.
+const cadetGrey = "#91A3B0";
+// The journey's own background trades the dirt brown for an ocean feel,
+// deepening from a lighter ocean blue to a darker one across the whole
+// (very long) timeline.
+const oceanStart = "#123044";
+const oceanEnd = "#0A1F2E";
+const experienceBg = `linear-gradient(180deg, ${oceanStart} 0%, ${oceanEnd} 100%)`;
+// A darker blue beat between the journey's navy end and the ocean photo.
+const deepBlue = "#050D14";
+
+// A plain multi-stop linear-gradient is piecewise-linear: the rate of
+// color change jumps abruptly at every stop, and the eye reads that slope
+// discontinuity as a visible seam (a Mach band) even where the color
+// itself is perfectly continuous — which is exactly what made the "held
+// color -> linear ramp -> held color" transitions still look like they
+// had a hard edge at each joint. Smoothstep's derivative is zero at both
+// t=0 and t=1, so sampling it into enough stops to approximate a curve
+// (rather than relying on CSS's own linear interpolation between just a
+// few stops) gives a transition that's flat-feeling at both ends and
+// smooth throughout, with no perceptible joint anywhere.
+function smoothstep(t: number) {
+  return t * t * (3 - 2 * t);
+}
+
+function hexToRgb(hex: string) {
+  const n = parseInt(hex.replace("#", ""), 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+
+// An eased linear-gradient's stop list (no "linear-gradient(...)" wrapper)
+// smoothly ramping from one solid color to another. startPct/endPct place
+// the whole curve within a sub-range of the gradient (e.g. 0-70% instead of
+// 0-100%), so it can be followed or preceded by other stops in the same
+// gradient — used to fit a color-ease and an alpha-fade into one Box.
+function easedColorStops(fromHex: string, toHex: string, steps = 16, startPct = 0, endPct = 100) {
+  const a = hexToRgb(fromHex);
+  const b = hexToRgb(toHex);
+  const stops: string[] = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const e = smoothstep(t);
+    const r = Math.round(a.r + (b.r - a.r) * e);
+    const g = Math.round(a.g + (b.g - a.g) * e);
+    const bl = Math.round(a.b + (b.b - a.b) * e);
+    const pct = startPct + (endPct - startPct) * t;
+    stops.push(`rgb(${r}, ${g}, ${bl}) ${pct.toFixed(1)}%`);
+  }
+  return stops.join(", ");
+}
+
+// Same easing, but ramping a single color's opacity (transparent <-> solid)
+// instead of blending between two colors — used to fade a photo's own edge
+// into (or out of) the color that sits next to it.
+function easedAlphaStops(hex: string, fromAlpha: number, toAlpha: number, steps = 16, startPct = 0, endPct = 100) {
+  const { r, g, b } = hexToRgb(hex);
+  const stops: string[] = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const e = smoothstep(t);
+    const alpha = fromAlpha + (toAlpha - fromAlpha) * e;
+    const pct = startPct + (endPct - startPct) * t;
+    stops.push(`rgba(${r}, ${g}, ${b}, ${alpha.toFixed(3)}) ${pct.toFixed(1)}%`);
+  }
+  return stops.join(", ");
+}
+
+// A transition Box's gradient, with its trailing `fadeOutPct` of height
+// fading the arrived color down to fully transparent instead of staying
+// solid — paired with a negative margin pulling the next section's photo
+// up to overlap that fading tail, so the box's own fade-out and the
+// photo's own fade-in blend together instead of meeting at a hard edge.
+function transitionGradient(fromHex: string, toHex: string, fadeOutPct = 0) {
+  const colorEnd = 100 - fadeOutPct;
+  const parts = [easedColorStops(fromHex, toHex, 16, 0, colorEnd)];
+  if (fadeOutPct > 0) parts.push(easedAlphaStops(toHex, 1, 0, 16, colorEnd, 100));
+  return parts.join(", ");
+}
+
+// The mirror of transitionGradient: the leading `fadeInPct` of height
+// fades UP from transparent into the starting color, paired with a
+// negative margin pulling this box up to overlap the PREVIOUS section's
+// photo's own fade-out tail.
+function transitionGradientFadeIn(fromHex: string, toHex: string, fadeInPct = 0) {
+  const colorStart = fadeInPct;
+  const parts: string[] = [];
+  if (fadeInPct > 0) parts.push(easedAlphaStops(fromHex, 0, 1, 16, 0, fadeInPct));
+  parts.push(easedColorStops(fromHex, toHex, 16, colorStart, 100));
+  return parts.join(", ");
+}
 
 function skillIcon(label: string) {
   const Icon = skillIcons[label];
@@ -110,28 +236,41 @@ function PhotoFrame({
   width,
   height,
   round = false,
+  crop = false,
 }: {
   src: string;
   alt: string;
   width: number;
   height: number;
   round?: boolean;
+  // Forces the image to fill the exact width/height given (cropping via
+  // object-fit instead of respecting its own aspect ratio) — used where
+  // several differently-shaped photos need to sit in one identically
+  // sized slot, like the layers of a PhotoStack.
+  crop?: boolean;
 }) {
   const { open } = useLightbox();
   return (
     <Box
       component="button"
       type="button"
-      onClick={() => open({ src, alt, width, height })}
+      onClick={(e) => {
+        e.stopPropagation();
+        open({ src, alt, width, height });
+      }}
       aria-label={`View larger image: ${alt}`}
-      sx={{ all: "unset", cursor: "zoom-in", ...photoFrameSx, ...(round && { borderRadius: "50%" }) }}
+      sx={{ all: "unset", cursor: "zoom-in", ...photoFrameSx, ...(round && { borderRadius: "50%" }), ...(crop && { display: "block" }) }}
     >
       <Image
         src={src}
         alt={alt}
         width={width}
         height={height}
-        style={{ display: "block", objectFit: "cover", maxWidth: "100%", height: "auto" }}
+        style={
+          crop
+            ? { display: "block", objectFit: "cover", width: "100%", height: "100%" }
+            : { display: "block", objectFit: "cover", maxWidth: "100%", height: "auto" }
+        }
       />
     </Box>
   );
@@ -145,7 +284,10 @@ function GridImageButton({ src, alt }: { src: string; alt: string }) {
     <Box
       component="button"
       type="button"
-      onClick={() => open({ src, alt, width: 600, height: 600 })}
+      onClick={(e) => {
+        e.stopPropagation();
+        open({ src, alt, width: 600, height: 600 });
+      }}
       aria-label={`View larger image: ${alt}`}
       sx={{ all: "unset", cursor: "zoom-in", display: "block" }}
     >
@@ -165,6 +307,7 @@ function GridImageButton({ src, alt }: { src: string; alt: string }) {
 function TimelineEntry({
   logo,
   logoAlt,
+  logoOnWhite = false,
   tag,
   title,
   org,
@@ -178,10 +321,16 @@ function TimelineEntry({
   isLast = false,
   aside,
   reportKey,
+  onCardClick,
+  forceWide = false,
+  hideStartDate = false,
   children,
 }: {
   logo?: string;
   logoAlt?: string;
+  // Wraps the logo in a white chip — for logos that are transparent PNGs
+  // and otherwise disappear against the card's dark background.
+  logoOnWhite?: boolean;
   tag?: string;
   title: string;
   org?: string;
@@ -195,6 +344,17 @@ function TimelineEntry({
   isLast?: boolean;
   aside?: React.ReactNode;
   reportKey?: string;
+  onCardClick?: () => void;
+  // For entries whose click handler is managed by the caller (a course
+  // term, a bio card) rather than the internal report toggle — pass the
+  // caller's own expanded state through so the row still widens instead of
+  // growing tall in a narrow column and visually bleeding into the entry
+  // below it.
+  forceWide?: boolean;
+  // The rail's date caption is skipped when the entry right before it
+  // already shows the same month/year — startDate itself is left alone
+  // (still used to key this entry's animations), only the rail label hides.
+  hideStartDate?: boolean;
   children?: React.ReactNode;
 }) {
   const { filter, prevFilter } = useJourneyFilter();
@@ -207,6 +367,23 @@ function TimelineEntry({
   const cardFlewPrev = Boolean(prevFilter) && (prevFilter === "projects" || prevFilter === "experience") && matchedPrev;
   const cardReturning = cardFlewPrev && !cardFlies;
   const report = reportKey ? coopReports[reportKey] : undefined;
+  const cardClickable = Boolean(githubUrl) || Boolean(report) || Boolean(onCardClick);
+
+  const handleCardClick = () => {
+    if (githubUrl) {
+      window.open(githubUrl, "_blank", "noopener,noreferrer");
+    } else if (report) {
+      setExpanded((e) => !e);
+    } else if (onCardClick) {
+      onCardClick();
+    }
+  };
+  const handleCardKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleCardClick();
+    }
+  };
 
   const cardBody = (
     <motion.div
@@ -219,6 +396,17 @@ function TimelineEntry({
       }
     >
       <Box
+        onClick={cardClickable ? handleCardClick : undefined}
+        onKeyDown={cardClickable ? handleCardKeyDown : undefined}
+        role={cardClickable ? "button" : undefined}
+        tabIndex={cardClickable ? 0 : undefined}
+        aria-label={
+          githubUrl
+            ? `${title}: view on GitHub`
+            : report
+            ? `${title}: ${expanded ? "hide" : "read"} full work term report`
+            : undefined
+        }
         sx={{
           bgcolor: "rgba(255,255,255,0.045)",
           border: "1px solid rgba(255,255,255,0.09)",
@@ -226,11 +414,25 @@ function TimelineEntry({
           p: { xs: 2.5, md: 3 },
           width: { md: cardFlies ? 420 : "auto" },
           maxWidth: cardFlies ? "88vw" : "none",
+          cursor: cardClickable ? "pointer" : "default",
+          transition: "transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease, background-color 0.3s ease",
+          "&:hover": {
+            transform: "translateY(-4px)",
+            borderColor: "rgba(255,255,255,0.22)",
+            bgcolor: "rgba(255,255,255,0.07)",
+            boxShadow: "0 20px 40px -20px rgba(0,0,0,0.6)",
+          },
         }}
       >
         <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start", flexWrap: "wrap" }}>
           {logo && (
-            <Image src={logo} alt={logoAlt ?? ""} width={56} height={56} style={{ objectFit: "contain", filter: dropShadow, flexShrink: 0 }} />
+            logoOnWhite ? (
+              <Box sx={{ width: 56, height: 56, borderRadius: 1.5, bgcolor: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, p: 0.75, filter: dropShadow }}>
+                <Image src={logo} alt={logoAlt ?? ""} width={44} height={44} style={{ objectFit: "contain" }} />
+              </Box>
+            ) : (
+              <Image src={logo} alt={logoAlt ?? ""} width={56} height={56} style={{ objectFit: "contain", filter: dropShadow, flexShrink: 0 }} />
+            )
           )}
           <Box sx={{ flex: 1, minWidth: 200 }}>
             {tag && (
@@ -241,26 +443,6 @@ function TimelineEntry({
             <Typography variant="h5" component="h3" sx={{ color: "#fff", textShadow }}>
               {title}
             </Typography>
-            {githubUrl && (
-              <Box
-                component="a"
-                href={githubUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 0.5,
-                  color: "rgba(255,255,255,0.65)",
-                  textShadow,
-                  mt: 0.25,
-                  "&:hover": { color: "#fff" },
-                }}
-              >
-                <GitHubIcon fontSize="small" />
-                <Typography variant="caption">View on GitHub</Typography>
-              </Box>
-            )}
             {org && (
               <Typography variant="body2" fontStyle="italic" sx={{ color: "rgba(255,255,255,0.8)", textShadow }}>
                 {org}
@@ -271,6 +453,7 @@ function TimelineEntry({
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="Company LinkedIn page"
+                    onClick={(e) => e.stopPropagation()}
                     sx={{ color: "secondary.main", ml: 0.75, verticalAlign: "middle", display: "inline-flex" }}
                   >
                     <LinkedInIcon fontSize="small" />
@@ -294,18 +477,9 @@ function TimelineEntry({
         {children}
 
         {report && (
-          <>
-            <Button
-              onClick={() => setExpanded((e) => !e)}
-              endIcon={<ExpandMoreIcon sx={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.3s ease" }} />}
-              sx={{ mt: 2.5, color: "secondary.main", textTransform: "none", pl: 0, "&:hover": { bgcolor: "transparent", textDecoration: "underline" } }}
-            >
-              {expanded ? "Hide full work term report" : "Read full work term report"}
-            </Button>
-            <Collapse in={expanded} unmountOnExit>
-              <WorkTermReport report={report} />
-            </Collapse>
-          </>
+          <Collapse in={expanded} unmountOnExit>
+            <WorkTermReport report={report} />
+          </Collapse>
         )}
       </Box>
     </motion.div>
@@ -313,15 +487,29 @@ function TimelineEntry({
 
   if (cardFlies) {
     return (
-      <TimelineRow side={side} startDate={startDate} endDate={endDate} isLast={isLast}>
+      <TimelineRow side={side} startDate={hideStartDate ? undefined : startDate} endDate={endDate} isLast={isLast}>
         <Box sx={{ visibility: "hidden" }} aria-hidden />
         {cardsTarget && createPortal(cardBody, cardsTarget, `card-${entryId}`)}
       </TimelineRow>
     );
   }
 
+  const revealedAside =
+    aside && !(expanded || forceWide) ? (
+      <Reveal direction={side === "left" ? "right" : "left"} once={false}>
+        {aside}
+      </Reveal>
+    ) : undefined;
+
   return (
-    <TimelineRow side={side} startDate={startDate} endDate={endDate} isLast={isLast} aside={expanded ? undefined : aside} wide={expanded}>
+    <TimelineRow
+      side={side}
+      startDate={hideStartDate ? undefined : startDate}
+      endDate={endDate}
+      isLast={isLast}
+      aside={revealedAside}
+      wide={expanded || forceWide}
+    >
       <Reveal direction={side} once={false}>
         {cardBody}
       </Reveal>
@@ -339,12 +527,77 @@ function scaledSize(w: number, h: number, maxW = 420, maxH = 520) {
   return { width: Math.round(w * scale), height: Math.round(h * scale) };
 }
 
-// The report's own opening photo, reused as the aside thumbnail next to
-// the job card itself — so there's a real photo to see even before
-// expanding the full report.
-function ReportPhotoFrame({ photo }: { photo: ReportPhoto }) {
-  const { width, height } = scaledSize(photo.width, photo.height, 440, 380);
-  return <PhotoFrame src={photo.src} alt={photo.alt} width={width} height={height} />;
+// How far each photo behind the front one sits, at rest and fanned out on
+// hover — reused across every stack rather than randomized per instance.
+const stackOffsets = [
+  { x: 32, y: 24, r: 5, hx: 72, hy: 36, hr: 9 },
+  { x: 58, y: 44, r: 9, hx: 130, hy: 66, hr: 16 },
+  { x: 84, y: 64, r: 13, hx: 188, hy: 96, hr: 23 },
+];
+
+// The report's photos as a stack — every layer forced to the same size
+// (shaped like the first photo, cropping the rest to match) so none of
+// them look undersized next to the front one. Sitting behind the front
+// photo at a slight fan that spreads further apart on hover so the ones
+// behind become reachable, and hovering any one of them brings it to the
+// front instead. Each layer is its own PhotoFrame, so clicking any visible
+// corner opens that specific photo.
+function PhotoStack({ photos }: { photos: ReportPhoto[] }) {
+  const shown = photos.slice(0, 4);
+  const [frontSrc, setFrontSrc] = useState(shown[0].src);
+  const back = shown.filter((p) => p.src !== frontSrc);
+  const { width, height } = scaledSize(shown[0].width, shown[0].height, 400, 340);
+
+  // A brief hold before a hovered photo takes over the front spot — without
+  // it, the moment one comes forward it's sitting right under a cursor that
+  // hasn't moved, which immediately re-triggers hover on whichever photo is
+  // now underneath and the two keep trading places.
+  const swapTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (swapTimeout.current) clearTimeout(swapTimeout.current);
+  }, []);
+  const scheduleSwap = (src: string) => {
+    if (swapTimeout.current) clearTimeout(swapTimeout.current);
+    swapTimeout.current = setTimeout(() => setFrontSrc(src), 400);
+  };
+  const cancelSwap = () => {
+    if (swapTimeout.current) {
+      clearTimeout(swapTimeout.current);
+      swapTimeout.current = null;
+    }
+  };
+
+  return (
+    <Box className="photo-stack" sx={{ position: "relative", width, height: height + 28 }}>
+      {shown.map((photo) => {
+        const isFront = photo.src === frontSrc;
+        const backIndex = back.findIndex((p) => p.src === photo.src);
+        const o = stackOffsets[backIndex % stackOffsets.length];
+        return (
+          <Box
+            key={photo.src}
+            onMouseEnter={() => !isFront && scheduleSwap(photo.src)}
+            onMouseLeave={cancelSwap}
+            sx={{
+              position: "absolute",
+              inset: 0,
+              zIndex: isFront ? shown.length : back.length - backIndex,
+              cursor: isFront ? "default" : "pointer",
+              transform: isFront ? "none" : `translate(${o.x}px, ${o.y}px) rotate(${o.r}deg)`,
+              transition: "transform 0.5s cubic-bezier(0.22,1,0.36,1)",
+              ...(!isFront && {
+                ".photo-stack:hover &": {
+                  transform: `translate(${o.hx}px, ${o.hy}px) rotate(${o.hr}deg)`,
+                },
+              }),
+            }}
+          >
+            <PhotoFrame src={photo.src} alt={photo.alt} width={width} height={height} crop />
+          </Box>
+        );
+      })}
+    </Box>
+  );
 }
 
 function WorkTermReport({ report }: { report: CoopReport }) {
@@ -380,34 +633,6 @@ function WorkTermReport({ report }: { report: CoopReport }) {
   );
 }
 
-// An empty, dashed-border slot sitting in the timeline's opposite column —
-// scaffolding for a real photo to be dropped in later, so the page reads as
-// a photo-and-text collage rather than a wall of cards even before any
-// images exist yet.
-function PhotoSlot({ label = "Photo coming soon" }: { label?: string }) {
-  return (
-    <Box
-      sx={{
-        border: "2px dashed rgba(255,255,255,0.16)",
-        borderRadius: 3,
-        aspectRatio: "4 / 3",
-        width: "100%",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 1,
-        color: "rgba(255,255,255,0.3)",
-      }}
-    >
-      <AddPhotoAlternateOutlinedIcon sx={{ fontSize: 30 }} />
-      <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.35)" }}>
-        {label}
-      </Typography>
-    </Box>
-  );
-}
-
 // A plain "[Season] [Year]" marker sitting on the rail right above that
 // term's coursework card — just a label, no card of its own, so it reads
 // as a section header rather than another entry competing for space.
@@ -433,8 +658,19 @@ function TermHeader({ label }: { label: string }) {
 // as a real card in the alternating timeline rather than a different kind
 // of thing. Co-op terms with nothing left to list here (their job already
 // has its own full entry) render nothing at all.
-function TermCourseworkEntry({ label, side }: { label: string; side: "left" | "right" }) {
+function TermCourseworkEntry({
+  label,
+  side,
+  isLast = false,
+  hideStartDate = false,
+}: {
+  label: string;
+  side: "left" | "right";
+  isLast?: boolean;
+  hideStartDate?: boolean;
+}) {
   const term = terms.find((t) => t.label === label);
+  const [expanded, setExpanded] = useState(false);
   if (!term || term.courses.length === 0) return null;
   return (
     <TimelineEntry
@@ -444,8 +680,74 @@ function TermCourseworkEntry({ label, side }: { label: string; side: "left" | "r
       org="University of Guelph"
       location="Guelph, Ontario"
       startDate={term.date}
+      onCardClick={() => setExpanded((e) => !e)}
+      forceWide={expanded}
+      isLast={isLast}
+      hideStartDate={hideStartDate}
     >
-      <CourseList courses={term.courses} />
+      <CourseList courses={term.courses} expanded={expanded} />
+    </TimelineEntry>
+  );
+}
+
+// The SOCIS President entry — the day-to-day bullets stay visible, but the
+// longer reflection on taking over the club and its most successful events
+// only shows once the card itself is clicked.
+function SocisPresidentEntry() {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <TimelineEntry
+      logo="/socisLogo.png"
+      logoAlt="SOCIS logo"
+      logoOnWhite
+      side="left"
+      tag="Extracurriculars"
+      title="SOCIS President"
+      location="Guelph, Ontario"
+      startDate="Dec 2023"
+      endDate="May 2024"
+      skills={["Time Management", "Public Speaking", "Leadership", "Budgeting", "Event Planning"]}
+      aside={
+        <PhotoStack
+          photos={[
+            { src: "/group.jpg", alt: "Image of computing community", width: 4032, height: 1444 },
+            { src: "/socis_president_a.jpg", alt: "SOCIS members with pizza at an election event", width: 4080, height: 3072 },
+            { src: "/socis_president_b.png", alt: "SOCIS President photo", width: 895, height: 895 },
+            { src: "/socis_president_c.png", alt: "SOCIS President photo", width: 889, height: 886 },
+          ]}
+        />
+      }
+      onCardClick={() => setExpanded((e) => !e)}
+      forceWide={expanded}
+    >
+      <BulletList
+        items={[
+          <>Ran <Hi>16</Hi> different events throughout one semester, including coding competitions and circuitry events</>,
+          <>Attended faculty meetings to advocate for computing students on curriculum changes</>,
+          <>Led the organization&apos;s executives and staff, managing <Hi>30</Hi> members across <Hi>5</Hi> committees</>,
+          <>Spearheaded a new initiative to create websites for other university clubs to generate revenue</>,
+        ]}
+      />
+
+      <Collapse in={expanded} unmountOnExit>
+        <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
+          I took over as president during a chaotic time for the club and
+          began rebuilding it, meticulously planning out the budget and
+          launching brand new computing merch to represent Guelph
+          Computing, which was very popular with students.
+        </Typography>
+
+        <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
+          Some of our most successful events for the club were:
+        </Typography>
+        <BulletList
+          items={[
+            <>Study Night (<Hi>50</Hi> people)</>,
+            <>Games Night (<Hi>60</Hi> people)</>,
+            <>Coding Competition (<Hi>75</Hi> people)</>,
+          ]}
+        />
+      </Collapse>
     </TimelineEntry>
   );
 }
@@ -469,11 +771,13 @@ function RecommendationCard({
   title,
   relationship,
   quote,
+  photo,
 }: {
   name: string;
   title: string;
   relationship: string;
   quote: string;
+  photo?: string;
 }) {
   return (
     <Box sx={{ borderLeft: "3px solid", borderColor: "secondary.main", pl: 3, py: 0.5 }}>
@@ -490,15 +794,20 @@ function RecommendationCard({
           </Typography>
         ))}
       </Stack>
-      <Typography variant="subtitle2" sx={{ color: "#fff", textShadow, mt: 2 }}>
-        {name}
-      </Typography>
-      <Typography variant="caption" display="block" sx={{ color: "rgba(255,255,255,0.7)", textShadow }}>
-        {title}
-      </Typography>
-      <Typography variant="caption" display="block" sx={{ color: "rgba(255,255,255,0.55)", textShadow }}>
-        {relationship}
-      </Typography>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mt: 2 }}>
+        {photo && <PhotoFrame src={photo} alt={name} width={44} height={44} round />}
+        <Box>
+          <Typography variant="subtitle2" sx={{ color: "#fff", textShadow }}>
+            {name}
+          </Typography>
+          <Typography variant="caption" display="block" sx={{ color: "rgba(255,255,255,0.7)", textShadow }}>
+            {title}
+          </Typography>
+          <Typography variant="caption" display="block" sx={{ color: "rgba(255,255,255,0.55)", textShadow }}>
+            {relationship}
+          </Typography>
+        </Box>
+      </Box>
     </Box>
   );
 }
@@ -506,6 +815,7 @@ function RecommendationCard({
 const recommendations = [
   {
     name: "Purvi Patel",
+    photo: "/purvi_patel.jpg",
     title: "Regional Manager (Canada), University of Guelph",
     relationship: "Managed Daniel directly · December 5, 2025",
     quote:
@@ -513,6 +823,7 @@ const recommendations = [
   },
   {
     name: "Monica Cojocaru",
+    photo: "/monica_cojocaru.jpg",
     title: "Associate Dean, Research and Graduate Studies, University of Guelph",
     relationship: "Senior to Daniel, did not manage him directly · October 24, 2024",
     quote:
@@ -520,6 +831,7 @@ const recommendations = [
   },
   {
     name: "Dr. Bethany Davidson-Eng",
+    photo: "/bethany_davidson-eng.jpg",
     title: "College Research Manager, College of Engineering and Physical Sciences, University of Guelph",
     relationship: "Managed Daniel directly · September 4, 2024",
     quote:
@@ -531,48 +843,144 @@ export default function PageContent() {
   const { filter, prevFilter } = useJourneyFilter();
   const journeyFilterActive = Boolean(filter);
   const journeyFilterClosing = Boolean(prevFilter) && !filter;
+  const aboutZoom = useSectionZoom();
+  const contactZoom = useSectionZoom();
   return (
     <GalleryPortalProvider>
     <LayoutGroup>
     <>
-      {/* About */}
-      <Box id="about" sx={{ py: { xs: 10, md: 16 }, background: aboutBg, position: "relative", zIndex: 1 }}>
-        <Reveal>
-        <Container maxWidth="md">
-          <RevealHeading text="About Me" />
-          <Box sx={{ display: "flex", flexDirection: { xs: "column", md: "row" }, gap: { xs: 4, md: 6 }, alignItems: "flex-start" }}>
-            <Box sx={{ flexShrink: 0, mx: { xs: "auto", md: 0 } }}>
-              <PhotoFrame src="/me.jpg" alt="Image of Me" width={260} height={260} round />
-            </Box>
+      {/* Hero fades into dirtColorEnd at its own bottom; a flat hold gives
+          brown real presence (a plain color-stop pair has zero slope, so
+          it joins the eased curve below with no seam), then a tall Box
+          blends through a generous middle section into cadetGrey. The
+          Box's own height is inflated beyond that blend's real span
+          specifically to make room for a long fade-to-transparent tail
+          (rather than a flat grey hold) — same visual "brown -> gray"
+          duration as before, but far less of it sits flat, and the fade
+          into the cave photo below is long instead of abrupt. The cave
+          photo is pulled up underneath (negative marginTop, lower zIndex)
+          to overlap that fade-out with its own fade-in. */}
+      <Box sx={{ height: { xs: "14vh", md: "20vh" }, background: dirtColorEnd, position: "relative", zIndex: 1 }} />
+      <Box
+        sx={{
+          height: { xs: "120vh", md: "160vh" },
+          background: `linear-gradient(180deg, ${transitionGradient(dirtColorEnd, cadetGrey, 38)})`,
+          position: "relative",
+          zIndex: 2,
+        }}
+      />
 
-            <Stack spacing={3} sx={{ textAlign: { xs: "center", md: "left" } }}>
-              <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow }}>
-                My name is Daniel Dombrovsky. I am currently a student at the
-                University of Guelph in the Bachelor of Computing program, majoring
-                in Software Engineering with Co-op. I love being involved in my
-                community by attending computing events, joining clubs, and
-                meeting new people. My courses have refined my back-end development
-                skills, which are complemented by the hands-on experience I gained
-                in front-end development through my extracurriculars. I thrive at
-                working in collaborative environments and creating innovative
-                solutions to intricate problems.
-              </Typography>
-              <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow }}>
-                Outside of university, I am interested in baking, I love trying new
-                recipes I come across online and cooking family recipes at home. I
-                love biking with my family and spending time outside during the
-                Summer. I currently live in Cambridge and cannot wait to complete
-                my degree to travel the world.
-              </Typography>
-              <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow }}>
-                A fun fact about me is that I have previously broken my left leg,
-                my right leg, and had a fingernail come off.
-              </Typography>
-            </Stack>
-          </Box>
-        </Container>
+      {/* About — the cave photo is this section's own background (same
+          pattern as Hero's mountain photo), so the "About Me" title and
+          bio text both sit inside it, title first. Shown in full — no
+          cropping — but both edges fade the same way Hero's own mountain
+          fades into its brown: cadetGrey fades in over the photo's own top
+          (so the previous Box hands off into the image itself, not a hard
+          cut), and the trailing edge fades into cadetGrey again (the color
+          the next Box picks up from). */}
+      <Box
+        ref={aboutZoom.ref}
+        sx={{ position: "relative", overflow: "hidden", zIndex: 1, background: cadetGrey, mt: { xs: "-45vh", md: "-60vh" } }}
+      >
+        <Box
+          component="img"
+          src="/cave2.webp"
+          alt="Waterfall inside a cave"
+          width={996}
+          height={1024}
+          sx={{
+            display: "block",
+            width: "100%",
+            height: "auto",
+            aspectRatio: "996 / 1024",
+            filter: `brightness(${aboutZoom.brightness})`,
+          }}
+        />
+        <Box sx={{ position: "absolute", inset: 0, background: "rgba(12,9,5,0.55)" }} />
+        <Box
+          sx={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: 0,
+            height: { xs: "40vh", md: "55vh" },
+            background: `linear-gradient(180deg, ${easedAlphaStops(cadetGrey, 1, 0)})`,
+          }}
+        />
+        <Box
+          sx={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: { xs: "32vh", md: "42vh" },
+            background: `linear-gradient(180deg, ${easedAlphaStops(cadetGrey, 0, 1)})`,
+          }}
+        />
+
+        <Box sx={{ position: "absolute", inset: 0, zIndex: 1, display: "flex", flexDirection: "column", justifyContent: "center", py: { xs: 10, md: 16 } }}>
+        <Reveal>
+        <Box id="about" sx={{ width: "100%" }}>
+          <Typography
+            variant="h2"
+            sx={{ color: "#fff", textAlign: "center", mb: 6, fontSize: { xs: "2rem", md: "2.75rem" }, textShadow }}
+          >
+            About Me
+          </Typography>
+          <Container maxWidth="md">
+            <Box sx={{ display: "flex", flexDirection: { xs: "column", md: "row" }, gap: { xs: 4, md: 6 }, alignItems: "flex-start" }}>
+              <Box sx={{ flexShrink: 0, mx: { xs: "auto", md: 0 } }}>
+                <PhotoFrame src="/me.jpg" alt="Image of Me" width={260} height={260} round />
+              </Box>
+
+              <Stack spacing={3} sx={{ textAlign: { xs: "center", md: "left" } }}>
+                <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow }}>
+                  My name is Daniel Dombrovsky. I am currently a student at the
+                  University of Guelph in the Bachelor of Computing program, majoring
+                  in Software Engineering with Co-op, and working part-time as a
+                  Software Engineer at Pepper this term. I love being involved in my
+                  community by attending computing events, joining clubs, and
+                  meeting new people. My courses have refined my back-end development
+                  skills, which are complemented by the hands-on experience I gained
+                  in front-end development through my extracurriculars. I thrive at
+                  working in collaborative environments and creating innovative
+                  solutions to intricate problems.
+                </Typography>
+                <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow }}>
+                  Outside of university, I am interested in baking, I love trying new
+                  recipes I come across online and cooking family recipes at home. I
+                  love biking with my family and spending time outside during the
+                  Summer. I currently live in Guelph, and I&apos;m actively looking
+                  for full-time software engineering opportunities starting Summer
+                  2027.
+                </Typography>
+                <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow }}>
+                  A fun fact about me is that I can play the clarinet, and my
+                  favorite movie is Back to the Future.
+                </Typography>
+              </Stack>
+            </Box>
+          </Container>
+        </Box>
         </Reveal>
+        </Box>
       </Box>
+
+      {/* Fades UP from transparent into cadetGrey over a long leading
+          stretch (same "inflate height, extend the fade, keep the color
+          blend's own span" approach as the incoming transition), pulled
+          up (negative marginTop, higher zIndex) to overlap the cave
+          photo's own trailing fade-out instead of meeting it at a hard
+          edge — the mirror of the incoming transition above. */}
+      <Box
+        sx={{
+          height: { xs: "77vh", md: "102vh" },
+          background: `linear-gradient(180deg, ${transitionGradientFadeIn(cadetGrey, oceanStart, 42)})`,
+          position: "relative",
+          zIndex: 2,
+          mt: { xs: "-32vh", md: "-42vh" },
+        }}
+      />
 
       {/* Experience */}
       <Box id="experience" sx={{ py: { xs: 10, md: 16 }, background: experienceBg, position: "relative", zIndex: 1 }}>
@@ -580,14 +988,9 @@ export default function PageContent() {
         <Container maxWidth="xl">
           <Typography
             variant="h2"
-            sx={{ color: "#fff", textAlign: "center", mb: 1, fontSize: { xs: "2rem", md: "2.75rem" }, textShadow }}
+            sx={{ color: "#fff", textAlign: "center", mb: 6, fontSize: { xs: "2rem", md: "2.75rem" }, textShadow }}
           >
             My Journey
-          </Typography>
-          <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.8)", textShadow, textAlign: "center", mb: 6, maxWidth: 640, mx: "auto" }}>
-            Education, co-ops, clubs, projects, and recognition — everything I&apos;ve
-            done, in the order it happened. Use Skills, Experience, or Projects in
-            the menu to see them float out on their own.
           </Typography>
           <Box
             sx={{
@@ -597,7 +1000,7 @@ export default function PageContent() {
               transition: journeyFilterClosing ? "opacity 0.5s ease, filter 0.5s ease" : "opacity 1.8s ease 0.3s, filter 1.8s ease 0.3s",
             }}
           >
-            <CollapsibleEarlyChapters label="2017 – 2023 · Before university (high school, summer jobs)">
+            <CollapsibleEarlyChapters label="2017 – 2022 · Before university (high school, summer jobs)">
               <YearMarker year="2017" />
               <TimelineEntry
                 side="left"
@@ -606,7 +1009,7 @@ export default function PageContent() {
                 org="YMCA Canada"
                 location="Cambridge, Ontario"
                 startDate="Jun 2017"
-                endDate="Jun 2020"
+                endDate="Jul 2019"
               >
                 <BulletList
                   items={[
@@ -619,6 +1022,8 @@ export default function PageContent() {
 
               <YearMarker year="2018" />
               <TimelineEntry
+                logo="/st_benedict_logo.jpg"
+                logoAlt="St. Benedict Catholic Secondary School logo"
                 side="right"
                 tag="Education"
                 title="High School Diploma, STEM"
@@ -644,7 +1049,6 @@ export default function PageContent() {
                 location="Cambridge, Ontario"
                 startDate="Oct 2019"
                 endDate="Feb 2022"
-                aside={<PhotoSlot />}
               >
                 <BulletList
                   items={[
@@ -674,30 +1078,33 @@ export default function PageContent() {
                 />
               </TimelineEntry>
 
-              <YearMarker year="2021" />
-              <TimelineEntry
-                side="left"
-                tag="Job"
-                title="Youth Mentor"
-                org="YMCA Canada"
-                location="Cambridge, Ontario"
-                startDate="Jun 2021"
-                endDate="Jul 2023"
-                aside={<PhotoSlot />}
-              >
-                <BulletList
-                  items={[
-                    <>Taught leaders in training how to work with children, run games, lead activities, and bond with campers</>,
-                    <>Lectured students on safety when working with children and the responsibility associated with their role</>,
-                    <>Evaluated the leaders in training, providing daily feedback, and submitting results to hiring managers</>,
-                  ]}
-                />
-              </TimelineEntry>
             </CollapsibleEarlyChapters>
 
+            {/* Runs into university (through Jul 2023), so it stays visible
+                in the main timeline rather than collapsed with the
+                strictly pre-university chapters above. */}
             <YearMarker year="2022" />
+            <TimelineEntry
+              side="left"
+              tag="Job"
+              title="Youth Mentor"
+              org="YMCA Canada"
+              location="Cambridge, Ontario"
+              startDate="Jun 2022"
+              endDate="Jul 2023"
+            >
+              <BulletList
+                items={[
+                  <>Taught leaders in training how to work with children, run games, lead activities, and bond with campers</>,
+                  <>Lectured students on safety when working with children and the responsibility associated with their role</>,
+                  <>Evaluated the leaders in training, providing daily feedback, and submitting results to hiring managers</>,
+                ]}
+              />
+            </TimelineEntry>
 
             <TimelineEntry
+              logo="/university_of_guelph_logo.jpg"
+              logoAlt="University of Guelph logo"
               side="right"
               tag="Education"
               title="Bachelor of Computing, Software Engineering Co-op"
@@ -716,20 +1123,31 @@ export default function PageContent() {
             </TimelineEntry>
 
             <TermHeader label="Fall 2022" />
-            <TermCourseworkEntry label="Fall 2022" side="left" />
+            <TermCourseworkEntry label="Fall 2022" side="left" hideStartDate />
 
             <TimelineEntry
               logo="/socisLogo.png"
               logoAlt="SOCIS logo"
+              logoOnWhite
               side="right"
-              tag="Club"
+              tag="Extracurriculars"
               title="Marketing Committee Member"
               org="SOCIS"
               location="Guelph, Ontario"
               startDate="Sep 2022"
+              hideStartDate
               endDate="Apr 2023"
               skills={["Problem Solving"]}
-              aside={<PhotoSlot />}
+              aside={
+                <PhotoStack
+                  photos={[
+                    { src: "/socis_marketing_a.jpg", alt: "SOCIS marketing committee event photo", width: 4080, height: 3072 },
+                    { src: "/socis_marketing_b.jpg", alt: "SOCIS marketing committee event photo", width: 4080, height: 3072 },
+                    { src: "/socis_marketing_c.jpg", alt: "SOCIS marketing committee event photo", width: 4080, height: 3072 },
+                    { src: "/socis_marketing_d.png", alt: "SOCIS marketing committee photo", width: 897, height: 889 },
+                  ]}
+                />
+              }
             >
               <BulletList
                 items={[
@@ -750,6 +1168,7 @@ export default function PageContent() {
               title="Baby Names Frequency Tracker"
               startDate="Jan 2023"
               endDate="Apr 2023"
+              hideStartDate
               githubUrl="https://github.com/ddombrov/BabyNamesFrequencyProject"
               skills={["Python", "Pandas"]}
               aside={<PhotoFrame src="/babyNames.png" alt="Baby Names Frequency Tracker screenshot" width={520} height={293} />}
@@ -767,13 +1186,24 @@ export default function PageContent() {
             <TimelineEntry
               logo="/socisLogo.png"
               logoAlt="SOCIS logo"
+              logoOnWhite
               side="left"
-              tag="Club"
+              tag="Extracurriculars"
               title="Vice President Communications"
               org="SOCIS"
               location="Guelph, Ontario"
               startDate="Apr 2023"
               endDate="Dec 2023"
+              aside={
+                <PhotoStack
+                  photos={[
+                    { src: "/socis_vp_a.jpg", alt: "SOCIS VP Communications event photo", width: 3024, height: 4032 },
+                    { src: "/socis_vp_b.jpg", alt: "SOCIS VP Communications event photo", width: 3024, height: 4032 },
+                    { src: "/socis_vp_c.png", alt: "SOCIS VP Communications photo", width: 895, height: 898 },
+                    { src: "/socis_vp_d.png", alt: "SOCIS VP Communications photo", width: 897, height: 894 },
+                  ]}
+                />
+              }
             >
               <BulletList
                 items={[
@@ -795,14 +1225,14 @@ export default function PageContent() {
               logo="/gdscLogo.png"
               logoAlt="GDSC logo"
               side="right"
-              tag="Club"
+              tag="Extracurriculars"
               title="Marketing and Publicity Director"
               org="Google Developer Student Club"
               location="Guelph, Ontario"
               startDate="Sep 2023"
               endDate="May 2024"
+              hideStartDate
               skills={["JavaScript", "HTML", "Firebase"]}
-              aside={<PhotoSlot />}
             >
               <BulletList
                 items={[
@@ -816,45 +1246,7 @@ export default function PageContent() {
               />
             </TimelineEntry>
 
-            <TimelineEntry
-              logo="/socisLogo.png"
-              logoAlt="SOCIS logo"
-              side="left"
-              tag="Club"
-              title="SOCIS President"
-              location="Guelph, Ontario"
-              startDate="Dec 2023"
-              endDate="May 2024"
-              skills={["Time Management", "Public Speaking", "Leadership", "Budgeting", "Event Planning"]}
-              aside={<PhotoFrame src="/group.jpg" alt="Image of computing community" width={380} height={253} />}
-            >
-              <BulletList
-                items={[
-                  <>Ran <Hi>16</Hi> different events throughout one semester, including coding competitions and circuitry events</>,
-                  <>Attended faculty meetings to advocate for computing students on curriculum changes</>,
-                  <>Led the organization&apos;s executives and staff, managing <Hi>30</Hi> members across <Hi>5</Hi> committees</>,
-                  <>Spearheaded a new initiative to create websites for other university clubs to generate revenue</>,
-                ]}
-              />
-
-              <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
-                I took over as president during a chaotic time for the club and
-                began rebuilding it, meticulously planning out the budget and
-                launching brand new computing merch to represent Guelph
-                Computing, which was very popular with students.
-              </Typography>
-
-              <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
-                Some of our most successful events for the club were:
-              </Typography>
-              <BulletList
-                items={[
-                  <>Study Night (<Hi>50</Hi> people)</>,
-                  <>Games Night (<Hi>60</Hi> people)</>,
-                  <>Coding Competition (<Hi>75</Hi> people)</>,
-                ]}
-              />
-            </TimelineEntry>
+            <SocisPresidentEntry />
 
             <YearMarker year="2024" />
 
@@ -862,11 +1254,14 @@ export default function PageContent() {
             <TermCourseworkEntry label="Winter 2024" side="right" />
 
             <TimelineEntry
+              logo="/care_ai_logo.jpg"
+              logoAlt="CARE-AI logo"
               side="left"
               tag="Certification"
               title="Introducing Artificial Intelligence: Training for the Road Ahead"
               org="CARE-AI, University of Guelph"
               startDate="Jan 2024"
+              hideStartDate
               aside={<PhotoFrame src="/care-ai-cert.png" alt="CARE-AI certificate of completion" width={210} height={273} />}
             >
               <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)", textShadow, mt: 2 }}>
@@ -881,6 +1276,7 @@ export default function PageContent() {
               title="Billiards Pool Game Simulator"
               startDate="Jan 2024"
               endDate="Apr 2024"
+              hideStartDate
               githubUrl="https://github.com/ddombrov/Billards-Game"
               skills={["C", "Python", "JavaScript", "jQuery", "SQL", "HTML", "CSS"]}
               aside={
@@ -904,12 +1300,15 @@ export default function PageContent() {
             <TermCourseworkEntry label="Summer 2024" side="left" />
 
             <TimelineEntry
+              logo="/ceps_uofg_logo.jpg"
+              logoAlt="College of Engineering and Physical Sciences, University of Guelph logo"
               side="right"
               tag="Co-op"
               title="Software Engineer"
               org="College of Engineering and Physical Sciences, University of Guelph"
               location="Guelph, Ontario"
               startDate="May 2024"
+              hideStartDate
               endDate="Aug 2024"
               companyUrl="https://www.linkedin.com/company/ccmps-uofg"
               skills={["Python", "R", "Plotly", "BeautifulSoup", "Selenium"]}
@@ -945,7 +1344,6 @@ export default function PageContent() {
               startDate="Aug 2024"
               githubUrl="https://github.com/ddombrov/HackThe6ix2024"
               skills={["Next.js", "OpenAI", "ElevenLabs", "Python", "React", "Firebase", "Material UI"]}
-              aside={<PhotoSlot />}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
                 Produced an AI-driven app to automate voice calls to businesses
@@ -960,16 +1358,19 @@ export default function PageContent() {
             <TermCourseworkEntry label="Fall 2024" side="right" />
 
             <TimelineEntry
+              logo="/city_of_guelph_logo.jpg"
+              logoAlt="City of Guelph logo"
               side="left"
               tag="Co-op"
               title="IT Support Technician"
               org="City of Guelph"
               location="Guelph, Ontario"
               startDate="Sep 2024"
+              hideStartDate
               endDate="Dec 2024"
               skills={["Time Management", "Public Speaking", "Active Directory"]}
               reportKey="guelph-2024"
-              aside={<ReportPhotoFrame photo={coopReports["guelph-2024"].photos[0]} />}
+              aside={<PhotoStack photos={coopReports["guelph-2024"].photos} />}
             >
               <BulletList
                 items={[
@@ -986,6 +1387,8 @@ export default function PageContent() {
             <TermCourseworkEntry label="Winter 2025" side="right" />
 
             <TimelineEntry
+              logo="/uog_gcc_logo.jpg"
+              logoAlt="Guelph Coding Community logo"
               side="left"
               tag="Volunteer"
               title="Marketing Team Member"
@@ -993,6 +1396,7 @@ export default function PageContent() {
               location="Guelph, Ontario"
               startDate="Jan 2025"
               endDate="Apr 2025"
+              hideStartDate
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
                 Volunteered on the marketing team promoting the Guelph Coding
@@ -1001,6 +1405,8 @@ export default function PageContent() {
             </TimelineEntry>
 
             <TimelineEntry
+              logo="/lapis_logo.jpg"
+              logoAlt="Lapis logo"
               side="right"
               tag="Part-time"
               title="Head of Infrastructure: Full Stack Developer"
@@ -1010,7 +1416,6 @@ export default function PageContent() {
               endDate="Dec 2025"
               companyUrl="https://www.linkedin.com/company/lapis-research"
               skills={["Next.js", "TypeScript", "Supabase", "Google OAuth", "Microsoft OAuth", "CRON"]}
-              aside={<PhotoSlot />}
             >
               <BulletList
                 items={[
@@ -1030,7 +1435,6 @@ export default function PageContent() {
               endDate="Apr 2025"
               githubUrl="https://github.com/ddombrov/oh_scanada"
               skills={["Flutter", "Dart", "Firestore"]}
-              aside={<PhotoSlot />}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
                 In CIS*4030, Mobile Computing, developed a barcode scanning app
@@ -1045,6 +1449,8 @@ export default function PageContent() {
             <TermCourseworkEntry label="Summer 2025" side="right" />
 
             <TimelineEntry
+              logo="/canadian_institute_for_health_information_logo.jpg"
+              logoAlt="Canadian Institute for Health Information logo"
               side="left"
               tag="Co-op"
               title="Software Engineer"
@@ -1052,10 +1458,11 @@ export default function PageContent() {
               location="North York, Ontario"
               startDate="May 2025"
               endDate="Aug 2025"
+              hideStartDate
               companyUrl="https://www.linkedin.com/company/canadian-institute-for-health-information"
               skills={["Python", "Spring Boot", "UML"]}
               reportKey="cihi-2025"
-              aside={<ReportPhotoFrame photo={coopReports["cihi-2025"].photos[0]} />}
+              aside={<PhotoStack photos={coopReports["cihi-2025"].photos} />}
             >
               <BulletList
                 items={[
@@ -1088,6 +1495,8 @@ export default function PageContent() {
             <TermCourseworkEntry label="Winter 2026" side="right" />
 
             <TimelineEntry
+              logo="/usepepper_logo.jpg"
+              logoAlt="Pepper logo"
               side="left"
               tag="Co-op"
               title="Software Engineer"
@@ -1095,10 +1504,11 @@ export default function PageContent() {
               location="Toronto, Ontario"
               startDate="Jan 2026"
               endDate="Apr 2026"
+              hideStartDate
               companyUrl="https://www.linkedin.com/company/usepepper"
               skills={["React", "TypeScript", "AWS Lambda", "Terraform"]}
               reportKey="pepper-2026-winter"
-              aside={<ReportPhotoFrame photo={coopReports["pepper-2026-winter"].photos[0]} />}
+              aside={<PhotoStack photos={coopReports["pepper-2026-winter"].photos} />}
             >
               <BulletList
                 items={[
@@ -1112,6 +1522,8 @@ export default function PageContent() {
             <TermCourseworkEntry label="Summer 2026" side="right" />
 
             <TimelineEntry
+              logo="/usepepper_logo.jpg"
+              logoAlt="Pepper logo"
               side="right"
               tag="Co-op"
               title="Software Engineer"
@@ -1119,10 +1531,11 @@ export default function PageContent() {
               location="Toronto, Ontario"
               startDate="May 2026"
               endDate="Aug 2026"
+              hideStartDate
               companyUrl="https://www.linkedin.com/company/usepepper"
               skills={["Python", "Django", "Postgres", "Hasura/GraphQL", "FastAPI", "Fastify"]}
               reportKey="pepper-2026-summer"
-              aside={<ReportPhotoFrame photo={coopReports["pepper-2026-summer"].photos[0]} />}
+              aside={<PhotoStack photos={coopReports["pepper-2026-summer"].photos} />}
             >
               <BulletList
                 items={[
@@ -1136,6 +1549,8 @@ export default function PageContent() {
             <TermCourseworkEntry label="Fall 2026" side="left" />
 
             <TimelineEntry
+              logo="/usepepper_logo.jpg"
+              logoAlt="Pepper logo"
               side="left"
               tag="Part-time"
               title="Software Engineer"
@@ -1143,8 +1558,8 @@ export default function PageContent() {
               location="Toronto, Ontario"
               startDate="Sep 2026"
               endDate="Present"
+              hideStartDate
               companyUrl="https://www.linkedin.com/company/usepepper"
-              aside={<PhotoSlot />}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
                 Continuing on with Pepper part-time this semester alongside
@@ -1155,53 +1570,125 @@ export default function PageContent() {
 
             <YearMarker year="2027" />
 
-            <TimelineEntry
-              side="right"
-              tag="Upcoming"
-              title="Winter 2027"
-              org="University of Guelph"
-              startDate="Jan 2027"
-              isLast
-            >
-              <CourseList courses={terms.find((t) => t.label === "Winter 2027")!.courses} />
-            </TimelineEntry>
+            <TermHeader label="Winter 2027" />
+            <TermCourseworkEntry label="Winter 2027" side="right" isLast />
           </Box>
         </Container>
       </Box>
 
-      {/* Contact */}
-      <Box id="contact" sx={{ py: { xs: 10, md: 14 }, textAlign: "center", background: contactBg, position: "relative", zIndex: 1 }}>
+      {/* Experience ends at oceanEnd ("navy blue"); a tall single Box holds
+          that navy as a clear stretch, blends through a generous middle
+          section, then holds deepBlue as its own clear stretch before the
+          ocean photo's own top fade takes over. */}
+      <Box
+        sx={{
+          height: { xs: "50vh", md: "68vh" },
+          background: `linear-gradient(180deg, ${easedColorStops(oceanEnd, deepBlue)})`,
+          position: "relative",
+          zIndex: 1,
+        }}
+      />
+
+      {/* Contact — the ocean photo is this section's own background (same
+          pattern as About/Hero), so "Contact Me" and the form both sit
+          inside it, title first, right above the form. Unlike the cave,
+          this one is cropped to a fixed section height (objectFit: cover,
+          full width kept) rather than shown at its full — extremely tall —
+          natural height. Both edges fade the same way Hero's own mountain
+          fades into its brown: deepBlue fades in over the photo's own top
+          (so the previous Box hands off into the image itself, not a hard
+          cut), and the trailing edge fades into deepBlue again (the color
+          the next Box picks up from). */}
+      <Box
+        ref={contactZoom.ref}
+        sx={{ position: "relative", overflow: "hidden", zIndex: 1, textAlign: "center", background: deepBlue, height: { xs: "110vh", md: "165vh" } }}
+      >
+        <Box
+          component="img"
+          src="/ocean2.avif"
+          alt="Deep blue ocean"
+          width={3436}
+          height={5164}
+          sx={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            objectPosition: "center",
+            filter: `brightness(${contactZoom.brightness})`,
+          }}
+        />
+        <Box sx={{ position: "absolute", inset: 0, background: "rgba(4,9,16,0.6)" }} />
+        <Box
+          sx={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: 0,
+            height: "14vh",
+            background: `linear-gradient(180deg, ${easedAlphaStops(deepBlue, 1, 0)})`,
+          }}
+        />
+        <Box
+          sx={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: "12vh",
+            background: `linear-gradient(180deg, ${easedAlphaStops(deepBlue, 0, 1)})`,
+          }}
+        />
+
+        <Box sx={{ position: "absolute", inset: 0, zIndex: 1, display: "flex", flexDirection: "column", justifyContent: "center", py: { xs: 10, md: 14 } }}>
         <Reveal>
-        <Container maxWidth="sm">
-          <Typography variant="h4" sx={{ color: "#fff", mb: 1, textShadow }}>
+        <Box id="contact" sx={{ width: "100%" }}>
+          <Typography
+            variant="h2"
+            sx={{ color: "#fff", textAlign: "center", mb: 4, fontSize: { xs: "2rem", md: "2.75rem" }, textShadow }}
+          >
             Contact Me
           </Typography>
-          <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mb: 4 }}>
-            Feel free to check out my GitHub, LinkedIn, or send me a message below.
-          </Typography>
-          <ContactForm />
-          <Stack direction="row" spacing={1} justifyContent="center" sx={{ mt: 5, mb: 4 }}>
-            <IconButton component="a" href="https://github.com/ddombrov" aria-label="GitHub" sx={{ color: "#fff" }}>
-              <GitHubIcon />
-            </IconButton>
-            <IconButton
-              component="a"
-              href="https://www.linkedin.com/in/daniel-dombrovsky-9d/"
-              aria-label="LinkedIn"
-              sx={{ color: "#fff" }}
-            >
-              <LinkedInIcon />
-            </IconButton>
-            <IconButton component="a" href="mailto:ddombrov@uoguelph.ca" aria-label="Email" sx={{ color: "#fff" }}>
-              <EmailIcon />
-            </IconButton>
-          </Stack>
-          <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.6)", textShadow }}>
-            © 2026 Daniel Dombrovsky
-          </Typography>
-        </Container>
+          <Container maxWidth="sm">
+            <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mb: 4 }}>
+              Feel free to check out my GitHub, LinkedIn, or send me a message below.
+            </Typography>
+            <ContactForm />
+            <Stack direction="row" spacing={1} justifyContent="center" sx={{ mt: 5, mb: 4 }}>
+              <IconButton component="a" href="https://github.com/ddombrov" aria-label="GitHub" sx={{ color: "#fff" }}>
+                <GitHubIcon />
+              </IconButton>
+              <IconButton
+                component="a"
+                href="https://www.linkedin.com/in/daniel-dombrovsky-9d/"
+                aria-label="LinkedIn"
+                sx={{ color: "#fff" }}
+              >
+                <LinkedInIcon />
+              </IconButton>
+              <IconButton component="a" href="mailto:ddombrov@uoguelph.ca" aria-label="Email" sx={{ color: "#fff" }}>
+                <EmailIcon />
+              </IconButton>
+            </Stack>
+            <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.6)", textShadow }}>
+              © 2026 Daniel Dombrovsky
+            </Typography>
+          </Container>
+        </Box>
         </Reveal>
+        </Box>
       </Box>
+
+      <Box
+        sx={{
+          height: { xs: "36vh", md: "48vh" },
+          background: `linear-gradient(180deg, ${easedColorStops(deepBlue, "#0F0C07")})`,
+          position: "relative",
+          zIndex: 1,
+        }}
+      />
+      <Box sx={{ height: { xs: "10vh", md: "14vh" }, background: "#0F0C07", position: "relative", zIndex: 1 }} />
     </>
     </LayoutGroup>
     </GalleryPortalProvider>

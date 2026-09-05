@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, LayoutGroup } from "framer-motion";
 import Container from "@mui/material/Container";
@@ -21,6 +21,7 @@ import GitHubIcon from "./icons/GitHubIcon";
 import Reveal from "./Reveal";
 import Hi from "./Highlight";
 import CollapsibleEarlyChapters from "./CollapsibleEarlyChapters";
+import CollapsibleYear from "./CollapsibleYear";
 import TimelineRow, { YearMarker } from "./TimelineRow";
 import CourseList from "./CourseList";
 import { terms } from "./courseData";
@@ -32,10 +33,17 @@ import { useJourneyFilter, tagMatchesFilter } from "./JourneyFilterContext";
 import { useLightbox } from "./Lightbox";
 import { GalleryPortalProvider, useGalleryPortal } from "./GalleryPortalContext";
 import JourneyGalleryOverlay from "./JourneyGalleryOverlay";
+import OceanDecorations from "./OceanDecorations";
 
 function slug(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
+
+// useLayoutEffect prints a "does nothing on the server" warning during the
+// static build's server-side pre-render pass (harmless, but noisy) — this
+// falls back to useEffect there and only becomes the real, before-paint
+// useLayoutEffect once actually running in the browser.
+const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 // The same scroll-linked scale-up + darken Hero uses on the mountain photo
 // (and ParallaxBand used before it), for a section's own background image.
@@ -46,33 +54,55 @@ function slug(s: string) {
 // or none at all (Contact, the very last section) — a "past the top"
 // trigger can mathematically never fire for Contact, since the page has
 // no more room to scroll once Contact's short body is fully in view.
-function useSectionZoom() {
+// `maxScaleDelta` is tunable per caller: a section whose image is already
+// cropped to a fixed box (objectFit: cover, like Hero's own mountain) can
+// take the full zoom with no visible side-effect, but a section showing
+// its photo at full, uncropped height has no headroom — scaling it up at
+// all pushes past the container's edges, and overflow:hidden crops
+// whatever exceeds them. Keep that case's delta small so the zoom reads as
+// motion without noticeably eating into the photo.
+function useSectionZoom(maxScaleDelta = 0.3) {
   const ref = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState(0);
   const rafId = useRef<number | null>(null);
 
-  useEffect(() => {
+  // This is a static export — scroll position doesn't exist at build time,
+  // so the pre-hydration HTML always paints progress=0 (no zoom, no
+  // darken) regardless of where the page actually loads scrolled to.
+  // Landing straight at a deep scroll position (a refresh, a direct link)
+  // used to show a visible flash of that undarkened default before this
+  // effect caught up — arriving by scrolling from the top never exposed
+  // it, since real scroll events kept the value continuously correct.
+  // useLayoutEffect (fires before the browser paints, unlike useEffect)
+  // plus computing the very first measurement synchronously — skipping
+  // the rAF hop the throttled scroll handler below uses — closes that gap
+  // as tightly as React allows: the first frame the user ever sees is
+  // already the right value instead of the wrong one self-correcting a
+  // moment later.
+  useIsomorphicLayoutEffect(() => {
+    const computeProgress = () => {
+      const el = ref.current;
+      if (!el) return;
+      const vh = window.innerHeight;
+      const raw = (vh - el.getBoundingClientRect().top) / vh;
+      setProgress(Math.min(Math.max(raw, 0), 1));
+    };
     const onScroll = () => {
       if (rafId.current !== null) return;
       rafId.current = requestAnimationFrame(() => {
-        const el = ref.current;
-        if (el) {
-          const vh = window.innerHeight;
-          const raw = (vh - el.getBoundingClientRect().top) / vh;
-          setProgress(Math.min(Math.max(raw, 0), 1));
-        }
+        computeProgress();
         rafId.current = null;
       });
     };
     window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
+    computeProgress();
     return () => {
       window.removeEventListener("scroll", onScroll);
       if (rafId.current !== null) cancelAnimationFrame(rafId.current);
     };
   }, []);
 
-  return { ref, scale: 1 + progress * 0.3, brightness: 1 - progress * 0.3 };
+  return { ref, scale: 1 + progress * maxScaleDelta, brightness: 1 - progress * 0.3 };
 }
 
 // Deterministically spreads each entry's flight start time across roughly
@@ -83,6 +113,30 @@ function launchDelay(id: string, spreadSeconds = 1.1) {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
   return (h % 1000) / 1000 * spreadSeconds;
+}
+
+// In the Experience gallery, cards land in a plain wrapping flex grid, so
+// their natural order is just each entry's position on the timeline —
+// chronological, but with everything at one organization scattered across
+// however many separate stints it had there. This list groups the gallery
+// by organization instead (first-appearance order), with chronological
+// order preserved as the tiebreaker within a group, so the whole run at
+// one company reads as a single career thread.
+const experienceOrgOrder = [
+  "YMCA Canada",
+  "Bloomex Canada",
+  "SOCIS",
+  "Google Developer Student Club",
+  "College of Engineering and Physical Sciences, University of Guelph",
+  "City of Guelph",
+  "Guelph Coding Community",
+  "Lapis",
+  "Canadian Institute for Health Information",
+  "Pepper",
+];
+function experienceGroupOrder(org?: string) {
+  const idx = experienceOrgOrder.indexOf(org ?? "");
+  return idx === -1 ? experienceOrgOrder.length : idx;
 }
 
 // Each section continues the descent from the hero's dirt-brown fade
@@ -128,7 +182,7 @@ function hexToRgb(hex: string) {
 // the whole curve within a sub-range of the gradient (e.g. 0-70% instead of
 // 0-100%), so it can be followed or preceded by other stops in the same
 // gradient — used to fit a color-ease and an alpha-fade into one Box.
-function easedColorStops(fromHex: string, toHex: string, steps = 16, startPct = 0, endPct = 100) {
+function easedColorStops(fromHex: string, toHex: string, steps = 32, startPct = 0, endPct = 100) {
   const a = hexToRgb(fromHex);
   const b = hexToRgb(toHex);
   const stops: string[] = [];
@@ -147,7 +201,7 @@ function easedColorStops(fromHex: string, toHex: string, steps = 16, startPct = 
 // Same easing, but ramping a single color's opacity (transparent <-> solid)
 // instead of blending between two colors — used to fade a photo's own edge
 // into (or out of) the color that sits next to it.
-function easedAlphaStops(hex: string, fromAlpha: number, toAlpha: number, steps = 16, startPct = 0, endPct = 100) {
+function easedAlphaStops(hex: string, fromAlpha: number, toAlpha: number, steps = 32, startPct = 0, endPct = 100) {
   const { r, g, b } = hexToRgb(hex);
   const stops: string[] = [];
   for (let i = 0; i <= steps; i++) {
@@ -324,6 +378,7 @@ function TimelineEntry({
   onCardClick,
   forceWide = false,
   hideStartDate = false,
+  hideEndDate = false,
   children,
 }: {
   logo?: string;
@@ -355,6 +410,10 @@ function TimelineEntry({
   // already shows the same month/year — startDate itself is left alone
   // (still used to key this entry's animations), only the rail label hides.
   hideStartDate?: boolean;
+  // Moves the end date off the rail and into the card body instead — for
+  // an entry like "Expected May 2027" where the date reads better as part
+  // of the card than as a small caption on the connector line.
+  hideEndDate?: boolean;
   children?: React.ReactNode;
 }) {
   const { filter, prevFilter } = useJourneyFilter();
@@ -389,6 +448,7 @@ function TimelineEntry({
     <motion.div
       layoutId={`card-${entryId}`}
       layout
+      style={filter === "experience" ? { order: experienceGroupOrder(org) } : undefined}
       transition={
         cardReturning
           ? { duration: 0.45, ease: [0.4, 0, 1, 1] }
@@ -469,6 +529,11 @@ function TimelineEntry({
                 </Typography>
               </Box>
             )}
+            {hideEndDate && endDate && (
+              <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.6)", textShadow, display: "block", mt: 0.5 }}>
+                {endDate}
+              </Typography>
+            )}
           </Box>
         </Box>
 
@@ -487,7 +552,7 @@ function TimelineEntry({
 
   if (cardFlies) {
     return (
-      <TimelineRow side={side} startDate={hideStartDate ? undefined : startDate} endDate={endDate} isLast={isLast}>
+      <TimelineRow side={side} startDate={hideStartDate ? undefined : startDate} endDate={hideEndDate ? undefined : endDate} isLast={isLast}>
         <Box sx={{ visibility: "hidden" }} aria-hidden />
         {cardsTarget && createPortal(cardBody, cardsTarget, `card-${entryId}`)}
       </TimelineRow>
@@ -505,7 +570,7 @@ function TimelineEntry({
     <TimelineRow
       side={side}
       startDate={hideStartDate ? undefined : startDate}
-      endDate={endDate}
+      endDate={hideEndDate ? undefined : endDate}
       isLast={isLast}
       aside={revealedAside}
       wide={expanded || forceWide}
@@ -703,6 +768,7 @@ function SocisPresidentEntry() {
       side="left"
       tag="Extracurriculars"
       title="SOCIS President"
+      org="SOCIS"
       location="Guelph, Ontario"
       startDate="Dec 2023"
       endDate="May 2024"
@@ -843,7 +909,10 @@ export default function PageContent() {
   const { filter, prevFilter } = useJourneyFilter();
   const journeyFilterActive = Boolean(filter);
   const journeyFilterClosing = Boolean(prevFilter) && !filter;
-  const aboutZoom = useSectionZoom();
+  // Cave is shown at its full, uncropped height, so its zoom stays subtle
+  // to avoid visibly cropping the photo; ocean is already cropped to a
+  // fixed box, so it can take the same full zoom Hero's mountain uses.
+  const aboutZoom = useSectionZoom(0.06);
   const contactZoom = useSectionZoom();
   return (
     <GalleryPortalProvider>
@@ -860,10 +929,10 @@ export default function PageContent() {
           into the cave photo below is long instead of abrupt. The cave
           photo is pulled up underneath (negative marginTop, lower zIndex)
           to overlap that fade-out with its own fade-in. */}
-      <Box sx={{ height: { xs: "14vh", md: "20vh" }, background: dirtColorEnd, position: "relative", zIndex: 1 }} />
+      <Box sx={{ height: { xs: "7vh", md: "10vh" }, background: dirtColorEnd, position: "relative", zIndex: 1 }} />
       <Box
         sx={{
-          height: { xs: "120vh", md: "160vh" },
+          height: { xs: "54vh", md: "72vh" },
           background: `linear-gradient(180deg, ${transitionGradient(dirtColorEnd, cadetGrey, 38)})`,
           position: "relative",
           zIndex: 2,
@@ -880,7 +949,7 @@ export default function PageContent() {
           the next Box picks up from). */}
       <Box
         ref={aboutZoom.ref}
-        sx={{ position: "relative", overflow: "hidden", zIndex: 1, background: cadetGrey, mt: { xs: "-45vh", md: "-60vh" } }}
+        sx={{ position: "relative", overflow: "hidden", zIndex: 1, background: cadetGrey, mt: { xs: "-22vh", md: "-29vh" } }}
       >
         <Box
           component="img"
@@ -893,6 +962,8 @@ export default function PageContent() {
             width: "100%",
             height: "auto",
             aspectRatio: "996 / 1024",
+            transform: `scale(${aboutZoom.scale})`,
+            transformOrigin: "center 50%",
             filter: `brightness(${aboutZoom.brightness})`,
           }}
         />
@@ -903,7 +974,7 @@ export default function PageContent() {
             left: 0,
             right: 0,
             top: 0,
-            height: { xs: "40vh", md: "55vh" },
+            height: { xs: "21vh", md: "28vh" },
             background: `linear-gradient(180deg, ${easedAlphaStops(cadetGrey, 1, 0)})`,
           }}
         />
@@ -913,14 +984,14 @@ export default function PageContent() {
             left: 0,
             right: 0,
             bottom: 0,
-            height: { xs: "32vh", md: "42vh" },
+            height: { xs: "4vh", md: "6vh" },
             background: `linear-gradient(180deg, ${easedAlphaStops(cadetGrey, 0, 1)})`,
           }}
         />
 
         <Box sx={{ position: "absolute", inset: 0, zIndex: 1, display: "flex", flexDirection: "column", justifyContent: "center", py: { xs: 10, md: 16 } }}>
         <Reveal>
-        <Box id="about" sx={{ width: "100%" }}>
+        <Box id="about" sx={{ width: "100%", scrollMarginTop: { xs: "80px", md: "88px" } }}>
           <Typography
             variant="h2"
             sx={{ color: "#fff", textAlign: "center", mb: 6, fontSize: { xs: "2rem", md: "2.75rem" }, textShadow }}
@@ -974,16 +1045,17 @@ export default function PageContent() {
           edge — the mirror of the incoming transition above. */}
       <Box
         sx={{
-          height: { xs: "77vh", md: "102vh" },
+          height: { xs: "50vh", md: "66vh" },
           background: `linear-gradient(180deg, ${transitionGradientFadeIn(cadetGrey, oceanStart, 42)})`,
           position: "relative",
           zIndex: 2,
-          mt: { xs: "-32vh", md: "-42vh" },
+          mt: { xs: "-24vh", md: "-31vh" },
         }}
       />
 
       {/* Experience */}
-      <Box id="experience" sx={{ py: { xs: 10, md: 16 }, background: experienceBg, position: "relative", zIndex: 1 }}>
+      <Box id="experience" sx={{ py: { xs: 6, md: 10 }, background: experienceBg, position: "relative", zIndex: 1 }}>
+        <OceanDecorations />
         <JourneyGalleryOverlay />
         <Container maxWidth="xl">
           <Typography
@@ -1000,7 +1072,7 @@ export default function PageContent() {
               transition: journeyFilterClosing ? "opacity 0.5s ease, filter 0.5s ease" : "opacity 1.8s ease 0.3s, filter 1.8s ease 0.3s",
             }}
           >
-            <CollapsibleEarlyChapters label="2017 – 2022 · Before university (high school, summer jobs)">
+            <CollapsibleEarlyChapters label="2017 – 2022 · Before university (high school)">
               <YearMarker year="2017" />
               <TimelineEntry
                 side="left"
@@ -1010,6 +1082,7 @@ export default function PageContent() {
                 location="Cambridge, Ontario"
                 startDate="Jun 2017"
                 endDate="Jul 2019"
+                skills={["Teamwork", "Communication", "Responsibility"]}
               >
                 <BulletList
                   items={[
@@ -1049,6 +1122,7 @@ export default function PageContent() {
                 location="Cambridge, Ontario"
                 startDate="Oct 2019"
                 endDate="Feb 2022"
+                skills={["Organization", "Attention to Detail", "Time Management"]}
               >
                 <BulletList
                   items={[
@@ -1068,6 +1142,7 @@ export default function PageContent() {
                 location="Cambridge, Ontario"
                 startDate="Jun 2020"
                 endDate="Jul 2021"
+                skills={["Leadership", "Safety Management", "Planning"]}
               >
                 <BulletList
                   items={[
@@ -1083,7 +1158,7 @@ export default function PageContent() {
             {/* Runs into university (through Jul 2023), so it stays visible
                 in the main timeline rather than collapsed with the
                 strictly pre-university chapters above. */}
-            <YearMarker year="2022" />
+            <CollapsibleYear year="2022">
             <TimelineEntry
               side="left"
               tag="Job"
@@ -1092,6 +1167,7 @@ export default function PageContent() {
               location="Cambridge, Ontario"
               startDate="Jun 2022"
               endDate="Jul 2023"
+              skills={["Mentorship", "Public Speaking", "Performance Evaluation"]}
             >
               <BulletList
                 items={[
@@ -1112,6 +1188,7 @@ export default function PageContent() {
               location="Guelph, Ontario"
               startDate="Sep 2022"
               endDate="Expected May 2027"
+              hideEndDate
             >
               <BulletList
                 items={[
@@ -1156,8 +1233,9 @@ export default function PageContent() {
                 ]}
               />
             </TimelineEntry>
+            </CollapsibleYear>
 
-            <YearMarker year="2023" />
+            <CollapsibleYear year="2023">
 
             <TermHeader label="Winter 2023" />
             <TermCourseworkEntry label="Winter 2023" side="left" />
@@ -1194,6 +1272,7 @@ export default function PageContent() {
               location="Guelph, Ontario"
               startDate="Apr 2023"
               endDate="Dec 2023"
+              skills={["Marketing", "Social Media Management", "Event Planning", "Graphic Design"]}
               aside={
                 <PhotoStack
                   photos={[
@@ -1247,8 +1326,9 @@ export default function PageContent() {
             </TimelineEntry>
 
             <SocisPresidentEntry />
+            </CollapsibleYear>
 
-            <YearMarker year="2024" />
+            <CollapsibleYear year="2024">
 
             <TermHeader label="Winter 2024" />
             <TermCourseworkEntry label="Winter 2024" side="right" />
@@ -1380,8 +1460,9 @@ export default function PageContent() {
                 ]}
               />
             </TimelineEntry>
+            </CollapsibleYear>
 
-            <YearMarker year="2025" />
+            <CollapsibleYear year="2025">
 
             <TermHeader label="Winter 2025" />
             <TermCourseworkEntry label="Winter 2025" side="right" />
@@ -1397,6 +1478,7 @@ export default function PageContent() {
               startDate="Jan 2025"
               endDate="Apr 2025"
               hideStartDate
+              skills={["Marketing", "Community Outreach"]}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
                 Volunteered on the marketing team promoting the Guelph Coding
@@ -1488,8 +1570,9 @@ export default function PageContent() {
                 <RecommendationCard {...recommendations[0]} />
               </Box>
             </TimelineEntry>
+            </CollapsibleYear>
 
-            <YearMarker year="2026" />
+            <CollapsibleYear year="2026">
 
             <TermHeader label="Winter 2026" />
             <TermCourseworkEntry label="Winter 2026" side="right" />
@@ -1567,11 +1650,12 @@ export default function PageContent() {
                 co-op terms overall.
               </Typography>
             </TimelineEntry>
+            </CollapsibleYear>
 
-            <YearMarker year="2027" />
-
+            <CollapsibleYear year="2027">
             <TermHeader label="Winter 2027" />
             <TermCourseworkEntry label="Winter 2027" side="right" isLast />
+            </CollapsibleYear>
           </Box>
         </Container>
       </Box>
@@ -1582,7 +1666,7 @@ export default function PageContent() {
           ocean photo's own top fade takes over. */}
       <Box
         sx={{
-          height: { xs: "50vh", md: "68vh" },
+          height: { xs: "20vh", md: "28vh" },
           background: `linear-gradient(180deg, ${easedColorStops(oceanEnd, deepBlue)})`,
           position: "relative",
           zIndex: 1,
@@ -1601,7 +1685,7 @@ export default function PageContent() {
           the next Box picks up from). */}
       <Box
         ref={contactZoom.ref}
-        sx={{ position: "relative", overflow: "hidden", zIndex: 1, textAlign: "center", background: deepBlue, height: { xs: "110vh", md: "165vh" } }}
+        sx={{ position: "relative", overflow: "hidden", zIndex: 1, textAlign: "center", background: deepBlue, height: { xs: "122vh", md: "180vh" } }}
       >
         <Box
           component="img"
@@ -1616,6 +1700,8 @@ export default function PageContent() {
             height: "100%",
             objectFit: "cover",
             objectPosition: "center",
+            transform: `scale(${contactZoom.scale})`,
+            transformOrigin: "center 50%",
             filter: `brightness(${contactZoom.brightness})`,
           }}
         />
@@ -1636,14 +1722,14 @@ export default function PageContent() {
             left: 0,
             right: 0,
             bottom: 0,
-            height: "12vh",
+            height: "20vh",
             background: `linear-gradient(180deg, ${easedAlphaStops(deepBlue, 0, 1)})`,
           }}
         />
 
         <Box sx={{ position: "absolute", inset: 0, zIndex: 1, display: "flex", flexDirection: "column", justifyContent: "center", py: { xs: 10, md: 14 } }}>
         <Reveal>
-        <Box id="contact" sx={{ width: "100%" }}>
+        <Box id="contact" sx={{ width: "100%", scrollMarginTop: { xs: "80px", md: "88px" } }}>
           <Typography
             variant="h2"
             sx={{ color: "#fff", textAlign: "center", mb: 4, fontSize: { xs: "2rem", md: "2.75rem" }, textShadow }}
@@ -1682,13 +1768,13 @@ export default function PageContent() {
 
       <Box
         sx={{
-          height: { xs: "36vh", md: "48vh" },
+          height: { xs: "10vh", md: "14vh" },
           background: `linear-gradient(180deg, ${easedColorStops(deepBlue, "#0F0C07")})`,
           position: "relative",
           zIndex: 1,
         }}
       />
-      <Box sx={{ height: { xs: "10vh", md: "14vh" }, background: "#0F0C07", position: "relative", zIndex: 1 }} />
+      <Box sx={{ height: { xs: "1.5vh", md: "2vh" }, background: "#0F0C07", position: "relative", zIndex: 1 }} />
     </>
     </LayoutGroup>
     </GalleryPortalProvider>

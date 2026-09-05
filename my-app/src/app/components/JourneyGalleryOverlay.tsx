@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
@@ -28,6 +29,25 @@ export default function JourneyGalleryOverlay() {
   // how fast the badges/cards themselves now hide — only the initial
   // reveal (off to on) uses the slow, traceable timing.
   const closing = Boolean(prevFilter) && !filter;
+
+  // The overlay is a fixed, full-viewport layer — that alone doesn't stop
+  // wheel/touch input from scrolling the (visually hidden) timeline behind
+  // it, since only the inner cards region has its own overflow. Lock the
+  // real page scroll while a filter is open so the background is inert.
+  useEffect(() => {
+    if (!active) return;
+    // Locking body alone doesn't stop it: the html element is the one
+    // actually scrolling here, so body's own overflow never gets asked.
+    const html = document.documentElement;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevBodyOverflow = document.body.style.overflow;
+    html.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    return () => {
+      html.style.overflow = prevHtmlOverflow;
+      document.body.style.overflow = prevBodyOverflow;
+    };
+  }, [active]);
 
   return (
     <Box

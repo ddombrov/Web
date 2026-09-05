@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import ThemeRegistry from "./ThemeRegistry";
 import Nav from "./components/Nav";
+import ChatWidget from "./components/ChatWidget";
 import { JourneyFilterProvider } from "./components/JourneyFilterContext";
 import { LightboxProvider } from "./components/Lightbox";
 
@@ -28,6 +29,7 @@ export default function RootLayout({
             <LightboxProvider>
               <Nav />
               {children}
+              <ChatWidget />
             </LightboxProvider>
           </JourneyFilterProvider>
         </ThemeRegistry>

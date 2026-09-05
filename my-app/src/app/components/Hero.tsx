@@ -79,9 +79,24 @@ export default function Hero() {
           sx={{
             fontSize: { xs: "2.75rem", sm: "4rem", md: "5.5rem" },
             textShadow: "0 4px 24px rgba(0,0,0,0.5)",
-            animation: "heroTitleIn 1.1s cubic-bezier(0.16,1,0.3,1) both",
+            // A wide letterSpacing at the animation's start can push the
+            // line just past its wrap point — the animation then visibly
+            // reflows from two lines to one mid-transition. This isn't a
+            // clean "narrow vs wide" split: measured directly (forcing the
+            // start-of-animation spacing and reading the rendered line
+            // count, since letting the animation actually play settles to
+            // "normal" well before any check can catch the true starting
+            // value), 0.1em still wraps at every width up to ~1400px, and
+            // even the full 0.35em wraps again from ~1536-2100px before
+            // finally clearing at ~2200px+. So: no letterSpacing at all
+            // (opacity/scale still animate) below that point, and the full
+            // original effect only past it, where it's been confirmed to
+            // actually stay on one line.
+            "--hero-letter-spacing": "0em",
+            "@media (min-width:2200px)": { "--hero-letter-spacing": "0.35em" },
+            animation: "heroTitleIn 0.8s cubic-bezier(0.16,1,0.3,1) both",
             "@keyframes heroTitleIn": {
-              "0%": { opacity: 0, letterSpacing: "0.35em", transform: "scale(0.94)" },
+              "0%": { opacity: 0, letterSpacing: "var(--hero-letter-spacing)", transform: "scale(0.94)" },
               "100%": { opacity: 1, letterSpacing: "normal", transform: "scale(1)" },
             },
             "@media (prefers-reduced-motion: reduce)": { animation: "none" },
@@ -97,7 +112,7 @@ export default function Hero() {
             fontWeight: 400,
             maxWidth: 640,
             textShadow: "0 2px 12px rgba(0,0,0,0.45)",
-            animation: "heroFadeUp 0.9s ease-out 0.55s both",
+            animation: "heroFadeUp 0.6s ease-out 0.2s both",
             "@keyframes heroFadeUp": {
               "0%": { opacity: 0, transform: "translateY(14px)" },
               "100%": { opacity: 1, transform: "translateY(0)" },
@@ -112,7 +127,7 @@ export default function Hero() {
           spacing={2}
           sx={{
             mt: 5,
-            animation: "heroFadeUp 0.9s ease-out 0.85s both",
+            animation: "heroFadeUp 0.6s ease-out 0.4s both",
             "@keyframes heroFadeUp": {
               "0%": { opacity: 0, transform: "translateY(14px)" },
               "100%": { opacity: 1, transform: "translateY(0)" },

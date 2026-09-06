@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 
 type Bubble = { top: string; side: "left" | "right"; offset: number; size: number; duration: number; delay: number; rise: number; sway: number };
@@ -313,19 +313,65 @@ const EMOJI_FISH: EmojiFish[] = [
   { id: "ef3", top: 90, emoji: "🐟", size: "1.1rem", duration: 42, delay: -8, reverse: false },
 ];
 
+// A fish darts off toward the edge it's already heading when clicked, then
+// resumes its usual cruising loop — the same "startled" idea as the crab,
+// expressed as a burst of speed instead of a flee-and-return. This can't be
+// done by just shrinking the keyframe animation's duration: since the
+// animation keeps running (same name, same delay), the browser recomputes
+// progress as elapsed-real-time / new-duration, which for a much shorter
+// duration jumps to a effectively unrelated point in the 0-100% cycle —
+// reading as "teleports to the edge, then moves fast" instead of "darts
+// away from where it actually was." Instead, on click this captures the
+// fish's real on-screen position, freezes the keyframe animation, and
+// drives a plain CSS transition from that exact captured point out to the
+// edge — which always starts smoothly from wherever the fish really is.
+const DASH_TRANSITION_S = 0.85;
+const DASH_MS = 900;
+
 function SwimmingEmojiFish({ f }: { f: EmojiFish }) {
   const animName = `emojiFishSwim_${f.id}`;
   const flip = !f.reverse;
+  const ref = useRef<HTMLDivElement>(null);
+  const [dashing, setDashing] = useState(false);
+  const [dashLeft, setDashLeft] = useState<number | null>(null);
+
+  const handleClick = () => {
+    const el = ref.current;
+    const parent = el?.offsetParent as HTMLElement | null;
+    if (!el || !parent || dashing) return;
+    const elRect = el.getBoundingClientRect();
+    const parentRect = parent.getBoundingClientRect();
+    const fromLeft = elRect.left - parentRect.left;
+    const toLeft = f.reverse ? -150 : parentRect.width + 150;
+
+    setDashing(true);
+    setDashLeft(fromLeft);
+    requestAnimationFrame(() => requestAnimationFrame(() => setDashLeft(toLeft)));
+    setTimeout(() => {
+      setDashing(false);
+      setDashLeft(null);
+    }, DASH_MS);
+  };
+
   return (
     <Box
+      ref={ref}
+      onClick={handleClick}
+      role="button"
+      aria-label="A fish — click it"
       sx={{
         position: "absolute",
         top: `${f.top}%`,
+        left: dashing ? dashLeft ?? undefined : undefined,
         fontSize: f.size,
         lineHeight: 1,
+        cursor: "pointer",
+        pointerEvents: "auto",
+        zIndex: 1,
         filter: "drop-shadow(0 3px 8px rgba(0,0,0,0.35))",
         transform: flip ? "scaleX(-1)" : "none",
-        animation: `${animName} ${f.duration}s linear ${f.delay}s infinite`,
+        transition: dashing ? `left ${DASH_TRANSITION_S}s cubic-bezier(0.3,0,0.7,1)` : "none",
+        animation: dashing ? "none" : `${animName} ${f.duration}s linear ${f.delay}s infinite`,
         [`@keyframes ${animName}`]: f.reverse
           ? { "0%": { left: "104%" }, "100%": { left: "-10%" } }
           : { "0%": { left: "-10%" }, "100%": { left: "104%" } },
@@ -412,18 +458,50 @@ function SwimmingFish({ f }: { f: Fish }) {
   const animName = `fishSwim_${f.id}`;
   const height = f.width * (34 / 50);
   const bob = f.bob;
+  const ref = useRef<HTMLDivElement>(null);
+  const [dashing, setDashing] = useState(false);
+  const [dashPos, setDashPos] = useState<{ left: number; top: number } | null>(null);
+
+  const handleClick = () => {
+    const el = ref.current;
+    const parent = el?.offsetParent as HTMLElement | null;
+    if (!el || !parent || dashing) return;
+    const elRect = el.getBoundingClientRect();
+    const parentRect = parent.getBoundingClientRect();
+    const fromLeft = elRect.left - parentRect.left;
+    const fromTop = elRect.top - parentRect.top;
+    const toLeft = f.reverse ? -150 : parentRect.width + 150;
+
+    setDashing(true);
+    setDashPos({ left: fromLeft, top: fromTop });
+    requestAnimationFrame(() => requestAnimationFrame(() => setDashPos({ left: toLeft, top: fromTop })));
+    setTimeout(() => {
+      setDashing(false);
+      setDashPos(null);
+    }, DASH_MS);
+  };
+
   return (
     <Box
+      ref={ref}
+      onClick={handleClick}
+      role="button"
+      aria-label="A fish — click it"
       sx={{
         position: "absolute",
-        top: `${f.top}%`,
+        top: dashing ? dashPos?.top ?? `${f.top}%` : `${f.top}%`,
+        left: dashing ? dashPos?.left ?? undefined : undefined,
         width: f.width,
         height,
+        cursor: "pointer",
+        pointerEvents: "auto",
+        zIndex: 1,
         filter: "drop-shadow(0 3px 8px rgba(0,0,0,0.35))",
         // Base shape faces right; a leftward swim mirrors the whole fish
         // (tail flap and all) so it visibly turns to face where it's going.
         transform: f.reverse ? "scaleX(-1)" : "none",
-        animation: `${animName} ${f.duration}s ease-in-out ${f.delay}s infinite`,
+        transition: dashing ? `left ${DASH_TRANSITION_S}s cubic-bezier(0.3,0,0.7,1)` : "none",
+        animation: dashing ? "none" : `${animName} ${f.duration}s ease-in-out ${f.delay}s infinite`,
         [`@keyframes ${animName}`]: f.reverse
           ? {
               "0%": { left: "104%", top: `${f.top}%` },
@@ -487,22 +565,23 @@ export default function OceanDecorations() {
         />
       ))}
 
+      </Box>
+
+      {/* Fish, crab, and chest render as siblings of the bubble layer
+          above, not nested inside it: that layer's zIndex:-1 establishes
+          its own stacking context, which traps every descendant at "-1"
+          no matter what z-index they're individually given — clicks on
+          them were being swallowed by ordinary (invisible but still
+          hit-testable) layout spacers from the card grid painting above.
+          Living outside that context, a modest positive zIndex here is
+          enough to win hit-testing normally. */}
       {FISH.map((f) => (
         <SwimmingFish key={f.id} f={f} />
       ))}
       {EMOJI_FISH.map((f) => (
         <SwimmingEmojiFish key={f.id} f={f} />
       ))}
-      </Box>
 
-      {/* Crab and chest render as siblings of the bubble/fish layer above,
-          not nested inside it: that layer's zIndex:-1 establishes its own
-          stacking context, which traps every descendant at "-1" no matter
-          what z-index they're individually given — clicks on the crab or
-          chest were being swallowed by ordinary (invisible but still
-          hit-testable) layout spacers from the card grid painting above
-          them. Living outside that context, a modest positive zIndex here
-          is enough to win hit-testing normally. */}
       <Crab id="1" top="35%" side="left" edge={-8} baseTransform="scaleX(-1) rotate(-8deg)" fleeDx={-70} fleeDy={30} />
       <Crab id="2" top="60%" side="right" edge={-8} baseTransform="rotate(10deg)" fleeDx={70} fleeDy={30} />
 

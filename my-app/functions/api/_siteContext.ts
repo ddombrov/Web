@@ -21,6 +21,8 @@ PERSONAL: Favorite color is blue. Born March 12, 2004. Favorite number is 9. Fav
 
 ABOUT: Daniel Dombrovsky lives in Guelph, Ontario. He is a student at the University of Guelph in the Bachelor of Computing program, majoring in Software Engineering with Co-op (Sep 2022 - Expected May 2027), minoring in Culture and Technology Studies, cumulative GPA 3.84, Entrance Scholarship (2022), Dean's Honour List (2022-2023). He is actively looking for full-time software engineering opportunities starting Summer 2027. Outside of school he enjoys baking, biking, plays the clarinet, and his favorite movie is Back to the Future.
 
+EDUCATION (high school): High School Diploma, STEM, from St. Benedict Catholic Secondary School in Cambridge, Ontario (Sep 2018 - Jun 2022). Member of Robotics Club, Coding Club, Math Club, Business Club, and Debate Team; co-founded Tech Summit (a club discussing tech news during COVID); served on Student Council editing promotional videos and updating the school's website.
+
 WORK EXPERIENCE (co-op terms and jobs, newest first):
 - Software Engineer, Pepper, Toronto (Sep 2026-Present, part-time alongside coursework). Continuing after two prior co-op terms at Pepper and five co-op terms overall.
 - Software Engineer, Pepper, Toronto (May-Aug 2026, co-op). Stack: Python, Django, Postgres, Hasura/GraphQL, FastAPI, Fastify. Owned and shipped a multi-tenant credit-application and automated-underwriting platform with FCRA-compliant decisioning, a self-serve form builder and reviewer dashboard used by 8 pilot distributor tenants; designed the customer-facing successor to the EDI dashboard.
@@ -31,6 +33,7 @@ WORK EXPERIENCE (co-op terms and jobs, newest first):
 - Head of Infrastructure / Full Stack Developer, Lapis (Feb-Dec 2025, part-time). Stack: Next.js, TypeScript, Supabase, Google/Microsoft OAuth, CRON. Cut dashboard load times from 4.9s to 200ms; automated nightly backups protecting 1.6 TB of client data.
 - Youth Mentor, YMCA Canada, Cambridge (Jun 2022-Jul 2023). Trained leaders-in-training, taught child-safety practices, evaluated staff performance.
 - Day Camp Counselor, YMCA Canada (summers 2020-2021). Day Camp Volunteer, YMCA Canada (summers 2017-2019).
+- General Laborer, Bloomex Canada, Cambridge (Oct 2019-Feb 2022). Warehouse inventory, receiving shipments, building gift baskets.
 
 EXTRACURRICULARS: President, VP Communications, and Marketing Committee Member of SOCIS (University of Guelph Computing Students' society); Marketing and Publicity Director, Google Developer Student Club; Marketing volunteer, Guelph Coding Community.
 

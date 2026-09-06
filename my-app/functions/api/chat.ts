@@ -23,6 +23,15 @@ const USAGE_TTL_SECONDS = 60 * 60 * 24 * 30;
 const MAX_HISTORY_MESSAGES = 16;
 const MAX_MESSAGE_LENGTH = 2000;
 
+// Groundwork for a "email me when a conversation goes quiet" digest: every
+// exchange gets appended to a per-visitor transcript in KV, stamped with
+// when it last moved and whether it's already been emailed. A separate
+// scheduled job (not built yet — needs an email-sending API key first)
+// periodically scans for transcripts idle more than an hour and not yet
+// reported, emails a summary, and marks them reported — so a visitor gets
+// at most one email per conversation, not one per message.
+const LOG_TTL_SECONDS = 60 * 60 * 24 * 7;
+
 // Set when OpenAI itself reports the account is out of quota/credits (not a
 // visitor hitting their own $0.50 cap). Cached briefly in KV so every other
 // visitor short-circuits without burning another failing OpenAI call, and
@@ -146,5 +155,25 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const newSpent = spent + cost;
   await env.CHAT_USAGE.put(usageKey, newSpent.toString(), { expirationTtl: USAGE_TTL_SECONDS });
 
+  await appendToLog(env, clientId, messages[messages.length - 1], { role: "assistant", content: reply });
+
   return json({ reply, limitReached: newSpent >= SPEND_LIMIT_USD, spentUsd: newSpent });
 };
+
+type LogEntry = { role: "user" | "assistant"; content: string; ts: number };
+type ConversationLog = { messages: LogEntry[]; lastActivity: number; reported: boolean };
+
+async function appendToLog(env: Env, clientId: string, userMessage: ChatMessage, assistantMessage: ChatMessage) {
+  const logKey = `log:${clientId}`;
+  const existingRaw = await env.CHAT_USAGE.get(logKey);
+  const existing: ConversationLog = existingRaw
+    ? (JSON.parse(existingRaw) as ConversationLog)
+    : { messages: [], lastActivity: 0, reported: false };
+
+  const now = Date.now();
+  existing.messages.push({ ...userMessage, ts: now }, { ...assistantMessage, ts: now });
+  existing.lastActivity = now;
+  existing.reported = false; // new activity means it needs reporting again once it goes quiet
+
+  await env.CHAT_USAGE.put(logKey, JSON.stringify(existing), { expirationTtl: LOG_TTL_SECONDS });
+}

@@ -9,6 +9,7 @@ import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import CloseIcon from "@mui/icons-material/Close";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import SendIcon from "@mui/icons-material/Send";
 import { textShadow } from "./styles";
 
@@ -135,10 +136,27 @@ export default function ChatWidget() {
             overflow: "hidden",
           }}
         >
-          <Box sx={{ px: 2, py: 1.5, borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+          <Box
+            sx={{
+              px: 2,
+              py: 1.5,
+              borderBottom: "1px solid rgba(255,255,255,0.1)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
             <Typography variant="subtitle1" sx={{ color: "#fff", textShadow, fontWeight: 700 }}>
               Ask about Daniel
             </Typography>
+            <IconButton
+              onClick={() => setOpen(false)}
+              size="small"
+              aria-label="Collapse chat"
+              sx={{ color: "rgba(255,255,255,0.6)", "&:hover": { color: "#fff" } }}
+            >
+              <KeyboardArrowDownIcon fontSize="small" />
+            </IconButton>
           </Box>
 
           <Box ref={scrollRef} sx={{ flex: 1, overflowY: "auto", px: 2, py: 1.5, display: "flex", flexDirection: "column", gap: 1.25 }}>

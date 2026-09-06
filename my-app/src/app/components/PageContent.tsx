@@ -30,7 +30,7 @@ import { skillIcons } from "./skillIcons";
 import ContactForm from "./ContactForm";
 import { textShadow, dropShadow, chipSx, photoFrameSx } from "./styles";
 import { useJourneyFilter, tagMatchesFilter } from "./JourneyFilterContext";
-import { useLightbox } from "./Lightbox";
+import { useLightbox, type LightboxImage } from "./Lightbox";
 import { GalleryPortalProvider, useGalleryPortal } from "./GalleryPortalContext";
 import JourneyGalleryOverlay from "./JourneyGalleryOverlay";
 import OceanDecorations from "./OceanDecorations";
@@ -38,6 +38,14 @@ import OceanDecorations from "./OceanDecorations";
 function slug(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
+
+const billiardsTableSrcs = ["/table-0.svg", "/table-1.svg", "/table-2.svg", "/table-3.svg"];
+const billiardsTableSet: LightboxImage[] = billiardsTableSrcs.map((src) => ({
+  src,
+  alt: "Billiards table",
+  width: 600,
+  height: 600,
+}));
 
 // useLayoutEffect prints a "does nothing on the server" warning during the
 // static build's server-side pre-render pass (harmless, but noisy) — this
@@ -291,6 +299,7 @@ function PhotoFrame({
   height,
   round = false,
   crop = false,
+  set,
 }: {
   src: string;
   alt: string;
@@ -302,6 +311,10 @@ function PhotoFrame({
   // several differently-shaped photos need to sit in one identically
   // sized slot, like the layers of a PhotoStack.
   crop?: boolean;
+  // The full group this photo belongs to (its true, uncropped dimensions,
+  // not this button's forced display size) — lets the Lightbox show
+  // prev/next arrows instead of opening just this one photo in isolation.
+  set?: LightboxImage[];
 }) {
   const { open } = useLightbox();
   return (
@@ -310,7 +323,8 @@ function PhotoFrame({
       type="button"
       onClick={(e) => {
         e.stopPropagation();
-        open({ src, alt, width, height });
+        const target = set?.find((s) => s.src === src) ?? { src, alt, width, height };
+        open(target, set);
       }}
       aria-label={`View larger image: ${alt}`}
       sx={{ all: "unset", cursor: "zoom-in", ...photoFrameSx, ...(round && { borderRadius: "50%" }), ...(crop && { display: "block" }) }}
@@ -331,8 +345,9 @@ function PhotoFrame({
 }
 
 // The billiards project's four table diagrams sit in one 2x2 grid image —
-// each one is still individually clickable through the same Lightbox.
-function GridImageButton({ src, alt }: { src: string; alt: string }) {
+// each one is still individually clickable through the same Lightbox, and
+// arrow-navigable between the other three.
+function GridImageButton({ src, alt, set }: { src: string; alt: string; set: LightboxImage[] }) {
   const { open } = useLightbox();
   return (
     <Box
@@ -340,7 +355,7 @@ function GridImageButton({ src, alt }: { src: string; alt: string }) {
       type="button"
       onClick={(e) => {
         e.stopPropagation();
-        open({ src, alt, width: 600, height: 600 });
+        open({ src, alt, width: 600, height: 600 }, set);
       }}
       aria-label={`View larger image: ${alt}`}
       sx={{ all: "unset", cursor: "zoom-in", display: "block" }}
@@ -410,9 +425,9 @@ function TimelineEntry({
   // already shows the same month/year — startDate itself is left alone
   // (still used to key this entry's animations), only the rail label hides.
   hideStartDate?: boolean;
-  // Moves the end date off the rail and into the card body instead — for
-  // an entry like "Expected May 2027" where the date reads better as part
-  // of the card than as a small caption on the connector line.
+  // Hides the end date off the rail connector — for an entry like
+  // "Expected May 2027" where the date reads better folded into the
+  // card's own description than as a caption on the connector line.
   hideEndDate?: boolean;
   children?: React.ReactNode;
 }) {
@@ -529,11 +544,6 @@ function TimelineEntry({
                 </Typography>
               </Box>
             )}
-            {hideEndDate && endDate && (
-              <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.6)", textShadow, display: "block", mt: 0.5 }}>
-                {endDate}
-              </Typography>
-            )}
           </Box>
         </Box>
 
@@ -612,6 +622,10 @@ function PhotoStack({ photos }: { photos: ReportPhoto[] }) {
   const [frontSrc, setFrontSrc] = useState(shown[0].src);
   const back = shown.filter((p) => p.src !== frontSrc);
   const { width, height } = scaledSize(shown[0].width, shown[0].height, 400, 340);
+  // True (uncropped) dimensions for the Lightbox — not the stack's forced
+  // display size — so arrow-navigating between them shows each at its own
+  // real aspect ratio.
+  const lightboxSet: LightboxImage[] = shown.map((p) => ({ src: p.src, alt: p.alt, width: p.width, height: p.height }));
 
   // A brief hold before a hovered photo takes over the front spot — without
   // it, the moment one comes forward it's sitting right under a cursor that
@@ -657,7 +671,7 @@ function PhotoStack({ photos }: { photos: ReportPhoto[] }) {
               }),
             }}
           >
-            <PhotoFrame src={photo.src} alt={photo.alt} width={width} height={height} crop />
+            <PhotoFrame src={photo.src} alt={photo.alt} width={width} height={height} crop set={lightboxSet} />
           </Box>
         );
       })}
@@ -1192,6 +1206,7 @@ export default function PageContent() {
             >
               <BulletList
                 items={[
+                  <>Expected graduation: May 2027</>,
                   <>Current cumulative GPA <Hi>3.84</Hi>; minoring in Culture and Technology Studies</>,
                   <>Entrance Scholarship (2022)</>,
                   <>Dean&apos;s Honour List (2022–2023)</>,
@@ -1361,8 +1376,8 @@ export default function PageContent() {
               skills={["C", "Python", "JavaScript", "jQuery", "SQL", "HTML", "CSS"]}
               aside={
                 <Box sx={{ borderRadius: 2, overflow: "hidden", filter: dropShadow, display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "2px", p: "2px", bgcolor: "#fff", maxWidth: 220, mx: { xs: "auto", md: 0 } }}>
-                  {["/table-0.svg", "/table-1.svg", "/table-2.svg", "/table-3.svg"].map((src) => (
-                    <GridImageButton key={src} src={src} alt="Billiards table" />
+                  {billiardsTableSrcs.map((src) => (
+                    <GridImageButton key={src} src={src} alt="Billiards table" set={billiardsTableSet} />
                   ))}
                 </Box>
               }

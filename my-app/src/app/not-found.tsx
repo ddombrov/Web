@@ -47,7 +47,9 @@ export default function NotFound() {
         {!fact && !failed && <CircularProgress size={20} sx={{ color: "rgba(255,255,255,0.5)" }} />}
         {fact && (
           <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.75)", textShadow, fontStyle: "italic" }}>
-            Fun fact while you&apos;re here: {fact}
+            Fun fact while you&apos;re here:
+            <br />
+            {fact}
           </Typography>
         )}
         {failed && (

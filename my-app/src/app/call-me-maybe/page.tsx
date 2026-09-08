@@ -23,6 +23,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import { textShadow } from "../components/styles";
+import "./tailwind.css";
 
 const TONE_VALUES = ["Flirty", "Funny", "Mean", "Serious", "Normal"] as const;
 const VOICE_VALUES = ["pqHfZKP75CvOlQylNhV4", "jsCqWAovK2LkecY7zXl4", "bIHbv24MWmeRgasZH58o", "ThT5KcBeYPX3keUQqHPh"] as const;
@@ -135,32 +136,24 @@ export default function CallMeMaybePage() {
   };
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        bgcolor: "#0B1730",
-        display: "flex",
-        justifyContent: "center",
-        px: 2,
-        py: { xs: 10, md: 14 },
-      }}
-    >
+    <>
       <Snackbar open={showError} autoHideDuration={6000} onClose={() => setShowError(false)} anchorOrigin={{ vertical: "top", horizontal: "center" }}>
         <Alert onClose={() => setShowError(false)} severity="error" sx={{ width: "100%" }}>
           {errorMessage}
         </Alert>
       </Snackbar>
 
-      <Box sx={{ width: "100%", maxWidth: 520 }}>
-        <Typography variant="h3" sx={{ color: "#fff", textShadow, fontWeight: 700, mb: 1, textAlign: "center" }}>
-          Call Me, Maybe? 📞
-        </Typography>
-        <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.7)", textShadow, mb: 4, textAlign: "center" }}>
-          Try it out and make a call 🚀 — type a message and an AI voice will actually call the number below and say it out loud.
-        </Typography>
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="rounded-md w-full h-screen flex items-center justify-center align-center sm:w-full bg-[#0B1730]"
+      >
+        <div className="flex flex-col sm:w-full md:w-1/2 items-center justify-center">
+          <div className="flex flex-col bg-transparent p-8 rounded-lg items-center gap-6 shadow-lg w-full">
+            <label className="text-2xl font-semibold text-center" style={{ color: "#fff", textShadow }}>
+              Try it out and make a call 🚀
+            </label>
 
-        <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
-          <Controller
+            <Controller
             control={control}
             name="purpose"
             render={({ field, fieldState }) => (
@@ -211,7 +204,7 @@ export default function CallMeMaybePage() {
             )}
           />
 
-          <Box sx={{ display: "flex", gap: 2 }}>
+          <div className="flex flex-row w-full gap-2">
             <Controller
               control={control}
               name="lengthOfCall"
@@ -247,7 +240,7 @@ export default function CallMeMaybePage() {
                 </FormControl>
               )}
             />
-          </Box>
+          </div>
 
           <Controller
             control={control}
@@ -367,8 +360,9 @@ export default function CallMeMaybePage() {
           {status === "unavailable" && (
             <Alert severity="info">This only works on the deployed site, not in local dev.</Alert>
           )}
-        </Box>
-      </Box>
-    </Box>
+          </div>
+        </div>
+      </form>
+    </>
   );
 }

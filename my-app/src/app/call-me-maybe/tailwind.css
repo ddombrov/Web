@@ -1,0 +1,7 @@
+/* Scoped to this page only - imported solely by call-me-maybe/page.tsx.
+   Deliberately skips tailwindcss/preflight.css (the base reset layer),
+   since that resets default styles on h1/button/input/etc. globally and
+   would otherwise change how the rest of the site's MUI components look
+   everywhere, not just here. */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);

@@ -22,7 +22,6 @@ import Tooltip from "@mui/material/Tooltip";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
-import { textShadow } from "../components/styles";
 import { AuroraBackground } from "./AuroraBackground";
 import VoiceCard from "./VoiceCard";
 import { voices } from "./voices";
@@ -65,14 +64,6 @@ const VOICES: { value: (typeof VOICE_VALUES)[number]; label: string }[] = [
 ];
 
 type Status = "idle" | "sending" | "success" | "error" | "limitReached" | "unavailable";
-
-const fieldSx = {
-  "& .MuiInputBase-root": { color: "#fff" },
-  "& .MuiInputLabel-root": { color: "rgba(255,255,255,0.7)" },
-  "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255,255,255,0.3)" },
-  "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255,255,255,0.5)" },
-  "& .MuiSelect-icon": { color: "rgba(255,255,255,0.7)" },
-};
 
 // A small demo: type a message, and an AI-generated voice actually calls a
 // real phone number and delivers it. Talks to the /api/call-me-maybe/*
@@ -180,9 +171,7 @@ export default function CallMeMaybePage() {
           >
         <div className="flex flex-col sm:w-full md:w-1/2 items-center justify-center">
           <div className="flex flex-col bg-transparent p-8 rounded-lg items-center gap-6 shadow-lg w-full">
-            <label className="text-2xl font-semibold text-center" style={{ color: "#fff", textShadow }}>
-              Try it out and make a call 🚀
-            </label>
+            <label className="text-2xl font-semibold text-center">Try it out and make a call 🚀</label>
 
             <Controller
             control={control}
@@ -195,7 +184,7 @@ export default function CallMeMaybePage() {
                 size="small"
                 error={!!fieldState.error}
                 helperText={fieldState.error?.message}
-                sx={fieldSx}
+
               />
             )}
           />
@@ -213,7 +202,7 @@ export default function CallMeMaybePage() {
                 size="small"
                 error={!!fieldState.error}
                 helperText={fieldState.error?.message}
-                sx={fieldSx}
+
               />
             )}
           />
@@ -230,7 +219,7 @@ export default function CallMeMaybePage() {
                 size="small"
                 error={!!fieldState.error}
                 helperText={fieldState.error?.message}
-                sx={fieldSx}
+
               />
             )}
           />
@@ -240,7 +229,7 @@ export default function CallMeMaybePage() {
               control={control}
               name="lengthOfCall"
               render={({ field, fieldState }) => (
-                <FormControl fullWidth size="small" sx={fieldSx}>
+                <FormControl fullWidth size="small">
                   <InputLabel>Call length</InputLabel>
                   <Select {...field} value={field.value ?? ""} label="Call length" error={!!fieldState.error}>
                     {LENGTHS.map((l) => (
@@ -258,7 +247,7 @@ export default function CallMeMaybePage() {
               control={control}
               name="tone"
               render={({ field, fieldState }) => (
-                <FormControl fullWidth size="small" sx={fieldSx}>
+                <FormControl fullWidth size="small">
                   <InputLabel>Tone</InputLabel>
                   <Select {...field} value={field.value ?? ""} label="Tone" error={!!fieldState.error}>
                     {TONES.map((t) => (
@@ -277,7 +266,7 @@ export default function CallMeMaybePage() {
             control={control}
             name="voice"
             render={({ field, fieldState }) => (
-              <FormControl fullWidth size="small" sx={fieldSx}>
+              <FormControl fullWidth size="small">
                 <InputLabel>Voice</InputLabel>
                 <Select {...field} value={field.value ?? ""} label="Voice" error={!!fieldState.error}>
                   {VOICES.map((v) => (
@@ -296,13 +285,13 @@ export default function CallMeMaybePage() {
               sx={{ display: "flex", alignItems: "center", cursor: "pointer", width: "fit-content" }}
               onClick={() => setOpenAdvanced(!openAdvanced)}
             >
-              <Typography sx={{ fontWeight: 600, fontSize: 13, color: "rgba(255,255,255,0.6)", textShadow, mr: 0.5 }}>
+              <Typography sx={{ fontWeight: 600, fontSize: 13, color: "rgba(0,0,0,0.6)", mr: 0.5 }}>
                 Advanced settings
               </Typography>
               {openAdvanced ? (
-                <ExpandLessIcon sx={{ color: "rgba(255,255,255,0.5)" }} fontSize="small" />
+                <ExpandLessIcon sx={{ color: "rgba(0,0,0,0.5)" }} fontSize="small" />
               ) : (
-                <ExpandMoreIcon sx={{ color: "rgba(255,255,255,0.5)" }} fontSize="small" />
+                <ExpandMoreIcon sx={{ color: "rgba(0,0,0,0.5)" }} fontSize="small" />
               )}
             </Box>
           </Box>
@@ -315,14 +304,14 @@ export default function CallMeMaybePage() {
                 render={({ field }) => (
                   <Box>
                     <Box sx={{ display: "flex", alignItems: "center" }}>
-                      <Typography sx={{ fontSize: 14, color: "rgba(255,255,255,0.7)", textShadow }}>Stability</Typography>
+                      <Typography sx={{ fontSize: 14, color: "rgba(0,0,0,0.7)" }}>Stability</Typography>
                       <Tooltip
                         title="Adjusts the voice consistency. Lower values produce a more emotive and varied performance while higher values lead to a more stable and consistent voice."
                         placement="top"
                         arrow
                       >
                         <IconButton size="small">
-                          <HelpOutlineOutlinedIcon sx={{ fontSize: 16, color: "rgba(255,255,255,0.5)" }} />
+                          <HelpOutlineOutlinedIcon sx={{ fontSize: 16, color: "rgba(0,0,0,0.5)" }} />
                         </IconButton>
                       </Tooltip>
                     </Box>
@@ -345,14 +334,14 @@ export default function CallMeMaybePage() {
                 render={({ field }) => (
                   <Box>
                     <Box sx={{ display: "flex", alignItems: "center" }}>
-                      <Typography sx={{ fontSize: 14, color: "rgba(255,255,255,0.7)", textShadow }}>Similarity</Typography>
+                      <Typography sx={{ fontSize: 14, color: "rgba(0,0,0,0.7)" }}>Similarity</Typography>
                       <Tooltip
                         title="Controls how closely the AI replicates the original voice. Higher values ensure the generated voice closely matches the original. Lower values allow for more flexibility and creativity."
                         placement="top"
                         arrow
                       >
                         <IconButton size="small">
-                          <HelpOutlineOutlinedIcon sx={{ fontSize: 16, color: "rgba(255,255,255,0.5)" }} />
+                          <HelpOutlineOutlinedIcon sx={{ fontSize: 16, color: "rgba(0,0,0,0.5)" }} />
                         </IconButton>
                       </Tooltip>
                     </Box>

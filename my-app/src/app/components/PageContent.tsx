@@ -1638,7 +1638,7 @@ export default function PageContent() {
               <BulletList
                 items={[
                   <>Owned and shipped a multi-tenant credit-application and automated-underwriting platform end to end with FCRA-compliant decisioning, launching a self-serve form builder and reviewer dashboard to <Hi>8</Hi> pilot distributor tenants</>,
-                  <>Designed and shipped the customer-facing successor to the EDI dashboard, moving failure alerting from internal-only visibility into the core product</>,
+                  <>Designed and shipped the customer-facing successor to the EDI dashboard, now with email and in-app alerts on pipeline failure, an AI-generated explanation of what went wrong, who&apos;s at fault, and next steps, and the ability to rerun a pipeline held by a guardrail (e.g. a file count drop from 50k to 50 — possibly intentional, but paused until confirmed)</>,
                 ]}
               />
             </TimelineEntry>

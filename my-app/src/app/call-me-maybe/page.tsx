@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import TextField from "@mui/material/TextField";
@@ -9,6 +12,7 @@ import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
+import FormHelperText from "@mui/material/FormHelperText";
 import Slider from "@mui/material/Slider";
 import Alert from "@mui/material/Alert";
 import Snackbar from "@mui/material/Snackbar";
@@ -20,19 +24,36 @@ import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import { textShadow } from "../components/styles";
 
-const TONES: { value: string; label: string }[] = [
+const TONE_VALUES = ["Flirty", "Funny", "Mean", "Serious", "Normal"] as const;
+const VOICE_VALUES = ["pqHfZKP75CvOlQylNhV4", "jsCqWAovK2LkecY7zXl4", "bIHbv24MWmeRgasZH58o", "ThT5KcBeYPX3keUQqHPh"] as const;
+const LENGTH_VALUES = ["short", "medium", "long"] as const;
+
+const schema = z.object({
+  prompt: z.string().min(1, "Required"),
+  purpose: z.string().min(1, "Required"),
+  phoneNumber: z.string().min(10, "Phone number must be at least 10 digits"),
+  lengthOfCall: z.enum(LENGTH_VALUES, "Required"),
+  tone: z.enum(TONE_VALUES, "Required"),
+  voice: z.enum(VOICE_VALUES, "Required"),
+  stability: z.number().min(0).max(1),
+  similarity: z.number().min(0).max(1),
+});
+
+type FormValues = z.infer<typeof schema>;
+
+const TONES: { value: (typeof TONE_VALUES)[number]; label: string }[] = [
   { value: "Flirty", label: "Flirty 🥰" },
   { value: "Funny", label: "Funny 😂" },
   { value: "Mean", label: "Mean 😡" },
   { value: "Serious", label: "Serious 🧐" },
   { value: "Normal", label: "Normal 😐" },
 ];
-const LENGTHS: { value: string; label: string }[] = [
+const LENGTHS: { value: (typeof LENGTH_VALUES)[number]; label: string }[] = [
   { value: "short", label: "Short" },
   { value: "medium", label: "Medium" },
   { value: "long", label: "Long" },
 ];
-const VOICES: { value: string; label: string }[] = [
+const VOICES: { value: (typeof VOICE_VALUES)[number]; label: string }[] = [
   { value: "pqHfZKP75CvOlQylNhV4", label: "Bill" },
   { value: "jsCqWAovK2LkecY7zXl4", label: "Freya" },
   { value: "bIHbv24MWmeRgasZH58o", label: "Will" },
@@ -52,34 +73,29 @@ const fieldSx = {
 // A small demo: type a message, and an AI-generated voice actually calls a
 // real phone number and delivers it. Talks to the /api/call-me-maybe/*
 // Cloudflare Pages Functions, which hold the OpenAI/ElevenLabs/Twilio keys
-// and a global daily/weekly call cap server-side.
+// and a global daily/weekly call cap server-side. Validation mirrors the
+// original hackathon app's react-hook-form + zod setup.
 export default function CallMeMaybePage() {
-  const [prompt, setPrompt] = useState("");
-  const [purpose, setPurpose] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [tone, setTone] = useState("");
-  const [lengthOfCall, setLengthOfCall] = useState("");
-  const [voice, setVoice] = useState("");
-  const [stability, setStability] = useState(0.5);
-  const [similarity, setSimilarity] = useState(0.75);
   const [openAdvanced, setOpenAdvanced] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const [showError, setShowError] = useState(false);
 
-  const canSubmit =
-    prompt.trim() &&
-    purpose.trim() &&
-    phoneNumber.replace(/\D/g, "").length >= 10 &&
-    tone &&
-    lengthOfCall &&
-    voice &&
-    status !== "sending";
+  const { handleSubmit, control, reset } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      prompt: "",
+      purpose: "",
+      phoneNumber: "",
+      lengthOfCall: undefined,
+      tone: undefined,
+      voice: undefined,
+      stability: 0.5,
+      similarity: 0.75,
+    },
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!canSubmit) return;
-
+  const onSubmit = async (data: FormValues) => {
     setStatus("sending");
     setShowError(false);
 
@@ -87,7 +103,7 @@ export default function CallMeMaybePage() {
       const res = await fetch("/api/call-me-maybe/start-call", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, tone, phoneNumber, purpose, voice, lengthOfCall, stability, similarity }),
+        body: JSON.stringify(data),
       });
 
       // Same as the chat widget: plain `next dev` has no Pages Functions
@@ -102,17 +118,15 @@ export default function CallMeMaybePage() {
         return;
       }
       if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        setErrorMessage(data.error ?? "Something went wrong placing the call.");
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        setErrorMessage(body.error ?? "Something went wrong placing the call.");
         setStatus("error");
         setShowError(true);
         return;
       }
 
       setStatus("success");
-      setPrompt("");
-      setPurpose("");
-      setPhoneNumber("");
+      reset();
     } catch {
       setErrorMessage("Something went wrong placing the call.");
       setStatus("error");
@@ -145,71 +159,113 @@ export default function CallMeMaybePage() {
           Try it out and make a call 🚀 — type a message and an AI voice will actually call the number below and say it out loud.
         </Typography>
 
-        <Box component="form" onSubmit={handleSubmit} sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
-          <TextField
-            label="Call subject (ex. Reminder for dad)"
-            value={purpose}
-            onChange={(e) => setPurpose(e.target.value)}
-            fullWidth
-            size="small"
-            sx={fieldSx}
+        <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+          <Controller
+            control={control}
+            name="purpose"
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                label="Call subject (ex. Reminder for dad)"
+                fullWidth
+                size="small"
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                sx={fieldSx}
+              />
+            )}
           />
 
-          <TextField
-            label="Call details (ex. Tell dad to pick up the milk)"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            fullWidth
-            multiline
-            rows={4}
-            size="small"
-            sx={fieldSx}
+          <Controller
+            control={control}
+            name="prompt"
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                label="Call details (ex. Tell dad to pick up the milk)"
+                fullWidth
+                multiline
+                rows={4}
+                size="small"
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                sx={fieldSx}
+              />
+            )}
           />
 
-          <TextField
-            label="Recipient phone number"
-            type="tel"
-            value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
-            fullWidth
-            size="small"
-            sx={fieldSx}
+          <Controller
+            control={control}
+            name="phoneNumber"
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                label="Recipient phone number"
+                type="tel"
+                fullWidth
+                size="small"
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                sx={fieldSx}
+              />
+            )}
           />
 
           <Box sx={{ display: "flex", gap: 2 }}>
-            <FormControl fullWidth size="small" sx={fieldSx}>
-              <InputLabel>Call length</InputLabel>
-              <Select value={lengthOfCall} label="Call length" onChange={(e) => setLengthOfCall(e.target.value)}>
-                {LENGTHS.map((l) => (
-                  <MenuItem key={l.value} value={l.value}>
-                    {l.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <Controller
+              control={control}
+              name="lengthOfCall"
+              render={({ field, fieldState }) => (
+                <FormControl fullWidth size="small" sx={fieldSx}>
+                  <InputLabel>Call length</InputLabel>
+                  <Select {...field} value={field.value ?? ""} label="Call length" error={!!fieldState.error}>
+                    {LENGTHS.map((l) => (
+                      <MenuItem key={l.value} value={l.value}>
+                        {l.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {fieldState.error && <FormHelperText error>{fieldState.error.message}</FormHelperText>}
+                </FormControl>
+              )}
+            />
 
-            <FormControl fullWidth size="small" sx={fieldSx}>
-              <InputLabel>Tone</InputLabel>
-              <Select value={tone} label="Tone" onChange={(e) => setTone(e.target.value)}>
-                {TONES.map((t) => (
-                  <MenuItem key={t.value} value={t.value}>
-                    {t.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <Controller
+              control={control}
+              name="tone"
+              render={({ field, fieldState }) => (
+                <FormControl fullWidth size="small" sx={fieldSx}>
+                  <InputLabel>Tone</InputLabel>
+                  <Select {...field} value={field.value ?? ""} label="Tone" error={!!fieldState.error}>
+                    {TONES.map((t) => (
+                      <MenuItem key={t.value} value={t.value}>
+                        {t.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {fieldState.error && <FormHelperText error>{fieldState.error.message}</FormHelperText>}
+                </FormControl>
+              )}
+            />
           </Box>
 
-          <FormControl fullWidth size="small" sx={fieldSx}>
-            <InputLabel>Voice</InputLabel>
-            <Select value={voice} label="Voice" onChange={(e) => setVoice(e.target.value)}>
-              {VOICES.map((v) => (
-                <MenuItem key={v.value} value={v.value}>
-                  {v.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <Controller
+            control={control}
+            name="voice"
+            render={({ field, fieldState }) => (
+              <FormControl fullWidth size="small" sx={fieldSx}>
+                <InputLabel>Voice</InputLabel>
+                <Select {...field} value={field.value ?? ""} label="Voice" error={!!fieldState.error}>
+                  {VOICES.map((v) => (
+                    <MenuItem key={v.value} value={v.value}>
+                      {v.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {fieldState.error && <FormHelperText error>{fieldState.error.message}</FormHelperText>}
+              </FormControl>
+            )}
+          />
 
           <Box>
             <Box
@@ -229,53 +285,65 @@ export default function CallMeMaybePage() {
 
           {openAdvanced && (
             <>
-              <Box>
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Typography sx={{ fontSize: 14, color: "rgba(255,255,255,0.7)", textShadow }}>Stability</Typography>
-                  <Tooltip
-                    title="Adjusts the voice consistency. Lower values produce a more emotive and varied performance while higher values lead to a more stable and consistent voice."
-                    placement="top"
-                    arrow
-                  >
-                    <IconButton size="small">
-                      <HelpOutlineOutlinedIcon sx={{ fontSize: 16, color: "rgba(255,255,255,0.5)" }} />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
-                <Slider
-                  value={stability}
-                  onChange={(_, v) => setStability(v as number)}
-                  step={0.01}
-                  min={0}
-                  max={1}
-                  valueLabelDisplay="auto"
-                  sx={{ color: "secondary.main" }}
-                />
-              </Box>
+              <Controller
+                control={control}
+                name="stability"
+                render={({ field }) => (
+                  <Box>
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                      <Typography sx={{ fontSize: 14, color: "rgba(255,255,255,0.7)", textShadow }}>Stability</Typography>
+                      <Tooltip
+                        title="Adjusts the voice consistency. Lower values produce a more emotive and varied performance while higher values lead to a more stable and consistent voice."
+                        placement="top"
+                        arrow
+                      >
+                        <IconButton size="small">
+                          <HelpOutlineOutlinedIcon sx={{ fontSize: 16, color: "rgba(255,255,255,0.5)" }} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                    <Slider
+                      value={field.value}
+                      onChange={(_, v) => field.onChange(v)}
+                      step={0.01}
+                      min={0}
+                      max={1}
+                      valueLabelDisplay="auto"
+                      sx={{ color: "secondary.main" }}
+                    />
+                  </Box>
+                )}
+              />
 
-              <Box>
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Typography sx={{ fontSize: 14, color: "rgba(255,255,255,0.7)", textShadow }}>Similarity</Typography>
-                  <Tooltip
-                    title="Controls how closely the AI replicates the original voice. Higher values ensure the generated voice closely matches the original. Lower values allow for more flexibility and creativity."
-                    placement="top"
-                    arrow
-                  >
-                    <IconButton size="small">
-                      <HelpOutlineOutlinedIcon sx={{ fontSize: 16, color: "rgba(255,255,255,0.5)" }} />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
-                <Slider
-                  value={similarity}
-                  onChange={(_, v) => setSimilarity(v as number)}
-                  step={0.01}
-                  min={0}
-                  max={1}
-                  valueLabelDisplay="auto"
-                  sx={{ color: "secondary.main" }}
-                />
-              </Box>
+              <Controller
+                control={control}
+                name="similarity"
+                render={({ field }) => (
+                  <Box>
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                      <Typography sx={{ fontSize: 14, color: "rgba(255,255,255,0.7)", textShadow }}>Similarity</Typography>
+                      <Tooltip
+                        title="Controls how closely the AI replicates the original voice. Higher values ensure the generated voice closely matches the original. Lower values allow for more flexibility and creativity."
+                        placement="top"
+                        arrow
+                      >
+                        <IconButton size="small">
+                          <HelpOutlineOutlinedIcon sx={{ fontSize: 16, color: "rgba(255,255,255,0.5)" }} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                    <Slider
+                      value={field.value}
+                      onChange={(_, v) => field.onChange(v)}
+                      step={0.01}
+                      min={0}
+                      max={1}
+                      valueLabelDisplay="auto"
+                      sx={{ color: "secondary.main" }}
+                    />
+                  </Box>
+                )}
+              />
             </>
           )}
 
@@ -284,7 +352,7 @@ export default function CallMeMaybePage() {
             variant="contained"
             color="secondary"
             fullWidth
-            disabled={!canSubmit}
+            disabled={status === "sending"}
             sx={{ borderRadius: 2, py: 1.2, fontWeight: 700 }}
           >
             {status === "sending" ? <CircularProgress size={22} sx={{ color: "#111" }} /> : "Make call"}

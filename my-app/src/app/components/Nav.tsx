@@ -121,13 +121,19 @@ export default function Nav() {
 
   const isActive = (item: NavItem) => (item.kind === "scroll" ? activeId === item.id && !filter : filter === item.filter);
 
+  // The transparent, blend-with-the-photo-behind-it look only makes sense
+  // on the home page, which always has a dark hero image at the top. Any
+  // other route (e.g. /call-me-maybe, which has its own light background)
+  // has no guarantee of a dark backdrop, so the nav stays opaque there.
+  const opaque = scrolled || pathname !== "/";
+
   return (
     <AppBar
       position="fixed"
       elevation={0}
       sx={{
-        backgroundColor: scrolled ? `${skyColor}D9` : "transparent",
-        backdropFilter: scrolled ? "blur(10px)" : "none",
+        backgroundColor: opaque ? `${skyColor}D9` : "transparent",
+        backdropFilter: opaque ? "blur(10px)" : "none",
         boxShadow: "none",
         transition: "background-color 0.3s ease",
       }}

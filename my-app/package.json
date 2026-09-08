@@ -5,7 +5,7 @@
   "homepage": "danieldombrovsky.com",
   "scripts": {
     "dev": "next dev --turbopack",
-    "dev:cf": "wrangler pages dev --port 8788 --proxy 3000 --kv CHAT_USAGE --compatibility-date=2025-01-01",
+    "dev:cf": "wrangler pages dev --port 8788 --proxy 3000 --kv CHAT_USAGE --kv CALL_USAGE --r2 CALL_AUDIO --compatibility-date=2025-01-01",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

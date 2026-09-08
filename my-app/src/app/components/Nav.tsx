@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
@@ -38,6 +39,8 @@ const navItems: NavItem[] = [
 const scrollIds = navItems.filter((i): i is Extract<NavItem, { kind: "scroll" }> => i.kind === "scroll").map((i) => i.id);
 
 export default function Nav() {
+  const router = useRouter();
+  const pathname = usePathname();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -70,8 +73,28 @@ export default function Nav() {
   }, []);
 
   const scrollTo = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     setDrawerOpen(false);
+
+    // home/about/experience/contact only exist as DOM elements on the home
+    // page itself. From any other route (e.g. /call-me-maybe), there's
+    // nothing to scroll to yet — navigate home first, then poll briefly for
+    // the target to mount, since a client-side route change isn't instant.
+    if (pathname !== "/") {
+      router.push("/");
+      let attempts = 0;
+      const tryScroll = () => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth" });
+        } else if (attempts++ < 40) {
+          setTimeout(tryScroll, 50);
+        }
+      };
+      setTimeout(tryScroll, 50);
+      return;
+    }
+
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleClick = (item: NavItem) => {

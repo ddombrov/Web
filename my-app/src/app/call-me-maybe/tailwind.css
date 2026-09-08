@@ -5,3 +5,36 @@
    everywhere, not just here. */
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
+
+/* The aurora background effect (ported from the original hackathon app,
+   which used an Aceternity-UI-style component) references these specific
+   color variables directly by name via var(--blue-500) etc. rather than
+   Tailwind v4's own auto-generated --color-* names, and a custom
+   "animate-aurora" utility that isn't part of Tailwind's defaults. Values
+   are Tailwind's standard default palette, matching what the original
+   project's flatten-all-colors-into-variables config plugin produced. */
+:root {
+  --white: #ffffff;
+  --black: #000000;
+  --transparent: transparent;
+  --blue-300: #93c5fd;
+  --blue-400: #60a5fa;
+  --blue-500: #3b82f6;
+  --indigo-300: #a5b4fc;
+  --violet-200: #ddd6fe;
+}
+
+@layer utilities {
+  @keyframes aurora {
+    from {
+      background-position: 50% 50%, 50% 50%;
+    }
+    to {
+      background-position: 350% 50%, 350% 50%;
+    }
+  }
+
+  .animate-aurora {
+    animation: aurora 60s linear infinite;
+  }
+}

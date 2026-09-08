@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -23,6 +23,9 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import { textShadow } from "../components/styles";
+import { AuroraBackground } from "./AuroraBackground";
+import VoiceCard from "./VoiceCard";
+import { voices } from "./voices";
 import "./tailwind.css";
 
 const TONE_VALUES = ["Flirty", "Funny", "Mean", "Serious", "Normal"] as const;
@@ -77,6 +80,7 @@ const fieldSx = {
 // and a global daily/weekly call cap server-side. Validation mirrors the
 // original hackathon app's react-hook-form + zod setup.
 export default function CallMeMaybePage() {
+  const formRef = useRef<HTMLFormElement>(null);
   const [openAdvanced, setOpenAdvanced] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState("");
@@ -143,10 +147,37 @@ export default function CallMeMaybePage() {
         </Alert>
       </Snackbar>
 
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="rounded-md w-full h-screen flex items-center justify-center align-center sm:w-full bg-[#0B1730]"
-      >
+      <AuroraBackground className="h-fit">
+        <div className="flex flex-col w-full items-center justify-center overflow-hidden">
+          <div className="overflow-hidden p-5 rounded-md w-full flex items-center justify-center flex-col gap-20">
+            <div className="w-full flex flex-col items-center justify-center gap-2">
+              <label className="text-6xl md:text-8xl font-sans font-semibold mt-20 text-center" style={{ color: "rgb(43, 77, 189)" }}>
+                Call Me Maybe
+              </label>
+              <label className="text-lg font-medium my-3 text-center">
+                Hey I just met you, and this is crazy, but here&apos;s my number, so call me maybe!
+              </label>
+              <Button
+                variant="contained"
+                sx={{ borderRadius: "8px", mt: 2, fontWeight: 600, px: 4 }}
+                onClick={() => formRef.current?.scrollIntoView({ behavior: "smooth" })}
+              >
+                Try us out!
+              </Button>
+            </div>
+
+            <div className="flex flex-row flex-wrap w-full justify-center gap-6 p-4">
+              {Object.entries(voices).map(([key, v], index) => (
+                <VoiceCard key={key} name={v.name} description={v.description} img={v.img} sample={v.sample} offsetUp={index === 0 || index === 3} />
+              ))}
+            </div>
+          </div>
+
+          <form
+            ref={formRef}
+            onSubmit={handleSubmit(onSubmit)}
+            className="rounded-md w-full h-screen flex items-center justify-center align-center sm:w-full"
+          >
         <div className="flex flex-col sm:w-full md:w-1/2 items-center justify-center">
           <div className="flex flex-col bg-transparent p-8 rounded-lg items-center gap-6 shadow-lg w-full">
             <label className="text-2xl font-semibold text-center" style={{ color: "#fff", textShadow }}>
@@ -360,9 +391,11 @@ export default function CallMeMaybePage() {
           {status === "unavailable" && (
             <Alert severity="info">This only works on the deployed site, not in local dev.</Alert>
           )}
+            </div>
           </div>
+          </form>
         </div>
-      </form>
+      </AuroraBackground>
     </>
   );
 }

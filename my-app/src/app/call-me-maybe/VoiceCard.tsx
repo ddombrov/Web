@@ -16,18 +16,16 @@ export default function VoiceCard({
   description,
   img,
   sample,
-  offsetUp,
 }: {
   name: string;
   description: string;
   img: string;
   sample: string;
-  offsetUp?: boolean;
 }) {
   const floatingStyle = useFloatingEffect();
 
   return (
-    <div style={{ marginTop: offsetUp ? "-100px" : "0px", ...floatingStyle }}>
+    <div style={floatingStyle}>
       <div
         style={{
           width: 300,

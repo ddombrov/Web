@@ -19,19 +19,30 @@ const Ctx = createContext<LightboxCtx | null>(null);
 // A single shared full-screen viewer for every photo on the page — clicking
 // any PhotoFrame opens its image here at a much larger size, in place, so
 // nobody ever leaves the page just to see a photo clearly.
+// A small hidden Easter egg on the About Me photo specifically: opening it
+// (1 click) and then clicking the enlarged image 3 more times (4 clicks
+// total) opens /call-me-maybe in a new tab, rewarding anyone curious enough
+// to keep clicking a portrait that doesn't otherwise do anything.
+const EASTER_EGG_SRC = "/me.jpg";
+const EASTER_EGG_CLICKS = 3;
+
 export function LightboxProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<{ set: LightboxImage[]; index: number } | null>(null);
+  const [innerClicks, setInnerClicks] = useState(0);
 
   const open = useCallback((img: LightboxImage, set?: LightboxImage[]) => {
     const group = set && set.length > 0 ? set : [img];
     const index = Math.max(0, group.findIndex((i) => i.src === img.src));
     setState({ set: group, index });
+    setInnerClicks(0);
   }, []);
   const close = useCallback(() => setState(null), []);
   const next = useCallback(() => {
+    setInnerClicks(0);
     setState((s) => (s ? { ...s, index: (s.index + 1) % s.set.length } : s));
   }, []);
   const prev = useCallback(() => {
+    setInnerClicks(0);
     setState((s) => (s ? { ...s, index: (s.index - 1 + s.set.length) % s.set.length } : s));
   }, []);
 
@@ -99,7 +110,15 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
           )}
 
           <Box
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (image.src !== EASTER_EGG_SRC) return;
+              const clicks = innerClicks + 1;
+              setInnerClicks(clicks);
+              if (clicks >= EASTER_EGG_CLICKS) {
+                window.open("/call-me-maybe", "_blank");
+              }
+            }}
             sx={{ position: "relative", maxWidth: "92vw", maxHeight: "88vh", cursor: "default" }}
           >
             <Image

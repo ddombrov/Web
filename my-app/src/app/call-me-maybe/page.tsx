@@ -158,8 +158,8 @@ export default function CallMeMaybePage() {
             </div>
 
             <div className="flex flex-row flex-wrap w-full justify-center gap-6 p-4">
-              {Object.entries(voices).map(([key, v], index) => (
-                <VoiceCard key={key} name={v.name} description={v.description} img={v.img} sample={v.sample} offsetUp={index === 0 || index === 3} />
+              {Object.entries(voices).map(([key, v]) => (
+                <VoiceCard key={key} name={v.name} description={v.description} img={v.img} sample={v.sample} />
               ))}
             </div>
           </div>
@@ -260,27 +260,27 @@ export default function CallMeMaybePage() {
                 </FormControl>
               )}
             />
+
+            <Controller
+              control={control}
+              name="voice"
+              render={({ field, fieldState }) => (
+                <FormControl fullWidth size="small">
+                  <InputLabel>Voice</InputLabel>
+                  <Select {...field} value={field.value ?? ""} label="Voice" error={!!fieldState.error}>
+                    {VOICES.map((v) => (
+                      <MenuItem key={v.value} value={v.value}>
+                        {v.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {fieldState.error && <FormHelperText error>{fieldState.error.message}</FormHelperText>}
+                </FormControl>
+              )}
+            />
           </div>
 
-          <Controller
-            control={control}
-            name="voice"
-            render={({ field, fieldState }) => (
-              <FormControl fullWidth size="small">
-                <InputLabel>Voice</InputLabel>
-                <Select {...field} value={field.value ?? ""} label="Voice" error={!!fieldState.error}>
-                  {VOICES.map((v) => (
-                    <MenuItem key={v.value} value={v.value}>
-                      {v.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-                {fieldState.error && <FormHelperText error>{fieldState.error.message}</FormHelperText>}
-              </FormControl>
-            )}
-          />
-
-          <Box>
+          <Box sx={{ width: "100%" }}>
             <Box
               sx={{ display: "flex", alignItems: "center", cursor: "pointer", width: "fit-content" }}
               onClick={() => setOpenAdvanced(!openAdvanced)}
@@ -302,7 +302,7 @@ export default function CallMeMaybePage() {
                 control={control}
                 name="stability"
                 render={({ field }) => (
-                  <Box>
+                  <Box sx={{ width: "100%" }}>
                     <Box sx={{ display: "flex", alignItems: "center" }}>
                       <Typography sx={{ fontSize: 14, color: "rgba(0,0,0,0.7)" }}>Stability</Typography>
                       <Tooltip
@@ -332,7 +332,7 @@ export default function CallMeMaybePage() {
                 control={control}
                 name="similarity"
                 render={({ field }) => (
-                  <Box>
+                  <Box sx={{ width: "100%" }}>
                     <Box sx={{ display: "flex", alignItems: "center" }}>
                       <Typography sx={{ fontSize: 14, color: "rgba(0,0,0,0.7)" }}>Similarity</Typography>
                       <Tooltip

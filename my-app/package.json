@@ -30,12 +30,15 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260702.1",
     "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.5.25",
     "gh-pages": "^6.3.0",
+    "postcss": "^8.5.28",
+    "tailwindcss": "^4.3.3",
     "typescript": "^5",
     "wrangler": "^4.86.0"
   }

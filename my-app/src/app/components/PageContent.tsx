@@ -963,7 +963,24 @@ export default function PageContent() {
           the next Box picks up from). */}
       <Box
         ref={aboutZoom.ref}
-        sx={{ position: "relative", overflow: "hidden", zIndex: 1, background: cadetGrey, mt: { xs: "-22vh", md: "-29vh" } }}
+        sx={{
+          position: "relative",
+          overflow: "hidden",
+          zIndex: 1,
+          background: cadetGrey,
+          mt: { xs: "-22vh", md: "-29vh" },
+          // The cave photo's own height is locked to its aspect ratio, which
+          // on a narrow mobile viewport shrinks to a few hundred pixels —
+          // nowhere near enough room for the heading, the round photo, and
+          // three paragraphs of bio text stacked underneath it. Without a
+          // floor here, that content (centered and absolutely positioned
+          // over the photo) gets silently clipped by this box's own
+          // overflow:hidden instead of pushing the box taller. The cadetGrey
+          // background already fades in from the photo's own bottom edge,
+          // so any extra height below a short photo just reads as more of
+          // that same fade rather than a visible seam.
+          minHeight: { xs: "1300px", sm: "900px" },
+        }}
       >
         <Box
           component="img"

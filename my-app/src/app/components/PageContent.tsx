@@ -991,8 +991,21 @@ export default function PageContent() {
           sx={{
             display: "block",
             width: "100%",
-            height: "auto",
-            aspectRatio: "996 / 1024",
+            // On xs/sm the box is taller than the photo's own aspect ratio
+            // would make it (see minHeight above), so the photo needs to
+            // actually fill that whole box — cropped via objectFit — rather
+            // than sitting at its natural (short) height with plain
+            // background color exposed below it. That's what caused the
+            // photo/content split and the missing bottom fade: the fade and
+            // the content were both built assuming "the photo fills this
+            // box," which stopped being true the moment the box grew taller
+            // than the photo. md keeps the original uncropped, full-height
+            // photo since there's no minHeight forcing extra room there.
+            height: { xs: "100%", md: "auto" },
+            position: { xs: "absolute", md: "static" },
+            inset: { xs: 0, md: "auto" },
+            aspectRatio: { xs: "auto", md: "996 / 1024" },
+            objectFit: { xs: "cover", md: "initial" },
             transform: `scale(${aboutZoom.scale})`,
             transformOrigin: "center 50%",
             filter: `brightness(${aboutZoom.brightness})`,

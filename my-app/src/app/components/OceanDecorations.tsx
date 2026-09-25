@@ -3,15 +3,23 @@
 import { useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 
-type BubbleKind = "css" | "photo";
+type BubbleKind = "css" | "photo1" | "photo2";
 
 type Bubble = { top: string; side: "left" | "right"; offset: number; size: number; duration: number; delay: number; rise: number; sway: number; kind: BubbleKind };
 
-// Close to half the bubbles render as the photo, the rest stay the original
-// CSS radial-gradient circle — high enough a share that the photo actually
-// reads as present in the mix rather than a rare, easy-to-miss one-off.
+// photo1 (the small iridescent soap bubble) shares the normal bubble size
+// range; photo2 (the glossy blue sphere) renders noticeably bigger, since
+// at the same small sizes as everything else its shine detail disappears.
+const PHOTO_SRC: Record<"photo1" | "photo2", string> = {
+  photo1: "/bubble-photo.webp",
+  photo2: "/bubble-blue.webp",
+};
+
 function randomBubbleKind(): BubbleKind {
-  return Math.random() < 0.45 ? "photo" : "css";
+  const r = Math.random();
+  if (r < 0.3) return "photo1";
+  if (r < 0.45) return "photo2";
+  return "css";
 }
 
 // Bubble clusters scattered down the Journey timeline. Opacity is constant
@@ -48,12 +56,15 @@ function randomBubbles(): Bubble[] {
       top: `${Math.min(100, Math.max(0, group.top + (Math.random() - 0.5) * 9)).toFixed(1)}%`,
       side: group.side,
       offset: group.inset + i * (3 + Math.random() * 2),
-      size: Math.round(9 + Math.random() * 15),
       duration: group.duration,
       delay: group.delay,
       rise: group.rise,
       sway: 5 + Math.random() * 7,
-      kind: randomBubbleKind(),
+      ...(() => {
+        const kind = randomBubbleKind();
+        const size = kind === "photo2" ? Math.round(28 + Math.random() * 22) : Math.round(9 + Math.random() * 15);
+        return { kind, size };
+      })(),
     }))
   );
 }
@@ -578,9 +589,9 @@ export default function OceanDecorations() {
             "@media (prefers-reduced-motion: reduce)": { animation: "none" },
           }}
         >
-          {b.kind === "photo" && (
+          {(b.kind === "photo1" || b.kind === "photo2") && (
             // eslint-disable-next-line @next/next/no-img-element -- decorative, randomly-sized background element; not worth next/image's overhead here
-            <img src="/bubble-photo.webp" alt="" width={b.size} height={b.size} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
+            <img src={PHOTO_SRC[b.kind]} alt="" width={b.size} height={b.size} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
           )}
         </Box>
       ))}

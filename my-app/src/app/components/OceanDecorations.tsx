@@ -7,19 +7,33 @@ type BubbleKind = "css" | "photo1" | "photo2";
 
 type Bubble = { top: string; side: "left" | "right"; offset: number; size: number; duration: number; delay: number; rise: number; sway: number; kind: BubbleKind };
 
-// photo1 (the small iridescent soap bubble) shares the normal bubble size
-// range; photo2 (the glossy blue sphere) renders noticeably bigger, since
-// at the same small sizes as everything else its shine detail disappears.
 const PHOTO_SRC: Record<"photo1" | "photo2", string> = {
   photo1: "/bubble-photo.webp",
   photo2: "/bubble-blue.webp",
 };
 
-function randomBubbleKind(): BubbleKind {
-  const r = Math.random();
-  if (r < 0.3) return "photo1";
-  if (r < 0.45) return "photo2";
-  return "css";
+// Size range (px) per bubble type: photo1 (the iridescent soap bubble) runs
+// 25% larger than the base CSS range, photo2 (the glossy blue sphere) is
+// deliberately smaller since its solid fill reads heavier at the same size.
+const BASE_SIZE = { min: 9, span: 15 };
+const SIZE: Record<BubbleKind, { min: number; span: number }> = {
+  css: BASE_SIZE,
+  photo1: { min: BASE_SIZE.min * 1.25, span: BASE_SIZE.span * 1.25 },
+  photo2: { min: 12, span: 8 },
+};
+
+const KINDS: BubbleKind[] = ["css", "photo1", "photo2"];
+
+// Assigning kinds by dealing them out in rotation and then shuffling — rather
+// than rolling each bubble's type independently — keeps the three types at
+// equal counts (within one), so the mix doesn't drift lopsided by luck.
+function balancedKinds(count: number): BubbleKind[] {
+  const kinds = Array.from({ length: count }, (_, i) => KINDS[i % KINDS.length]);
+  for (let i = kinds.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [kinds[i], kinds[j]] = [kinds[j], kinds[i]];
+  }
+  return kinds;
 }
 
 // Bubble clusters scattered down the Journey timeline. Opacity is constant
@@ -37,7 +51,7 @@ const GROUP_COUNT = 22;
 
 function randomBubbles(): Bubble[] {
   const slotSpacing = 100 / (GROUP_COUNT - 1);
-  return Array.from({ length: GROUP_COUNT }, (_, gi) => {
+  const positioned = Array.from({ length: GROUP_COUNT }, (_, gi) => {
     const idealTop = gi * slotSpacing;
     const jitter = (Math.random() - 0.5) * slotSpacing * 0.7;
     const top = Math.min(100, Math.max(0, idealTop + jitter));
@@ -60,13 +74,14 @@ function randomBubbles(): Bubble[] {
       delay: group.delay,
       rise: group.rise,
       sway: 5 + Math.random() * 7,
-      ...(() => {
-        const kind = randomBubbleKind();
-        const size = kind === "photo2" ? Math.round(12 + Math.random() * 8) : Math.round(9 + Math.random() * 15);
-        return { kind, size };
-      })(),
     }))
   );
+
+  const kinds = balancedKinds(positioned.length);
+  return positioned.map((bubble, i): Bubble => {
+    const { min, span } = SIZE[kinds[i]];
+    return { ...bubble, kind: kinds[i], size: Math.round(min + Math.random() * span) };
+  });
 }
 
 let burstIdCounter = 0;

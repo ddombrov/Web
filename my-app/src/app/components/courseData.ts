@@ -116,7 +116,6 @@ export const terms: Term[] = [
     courses: [
       { code: "CIS*4150", name: "Software Reliability & Testing", description: "Systematic testing/verification methods (static & dynamic), reliability prediction, and various testing types (unit, integration, regression, system)." },
       { code: "CIS*3260", name: "Software Design IV", description: "Advanced software architectures, design patterns, modeling methodologies, and evaluating tools/frameworks for scalable systems." },
-      { code: "ENVS*1060", name: "Discovering Planet Earth", description: "Introduction to geological principles and their application to interpreting Earth materials and processes." },
       { code: "UNIV*1000", name: "University Learning Skills", description: "Learning theory as a foundation for university success: metacognitive strategies, problem-solving, self-efficacy, and resilience." },
       { code: "PHYS*1600", name: "Contemporary Astronomy", description: "Interdisciplinary astronomy for non-science students: solar system, stellar evolution, pulsars, black holes, quasars, cosmology." },
     ],

@@ -9,6 +9,7 @@ import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Chip from "@mui/material/Chip";
 import IconButton from "@mui/material/IconButton";
+import Button from "@mui/material/Button";
 import Collapse from "@mui/material/Collapse";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
@@ -17,6 +18,7 @@ import Image from "next/image";
 import LinkedInIcon from "@mui/icons-material/LinkedIn";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import EmailIcon from "@mui/icons-material/Email";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import GitHubIcon from "./icons/GitHubIcon";
 import Reveal from "./Reveal";
 import Hi from "./Highlight";
@@ -385,6 +387,7 @@ function TimelineEntry({
   endDate,
   companyUrl,
   githubUrl,
+  tryUrl,
   skills = [],
   side = "left",
   isLast = false,
@@ -409,6 +412,10 @@ function TimelineEntry({
   endDate?: string;
   companyUrl?: string;
   githubUrl?: string;
+  // A live demo/site to try, separate from githubUrl (the source) — renders
+  // as its own "Try Now" button rather than taking over the card's main
+  // click (which opens GitHub when a repo link is present).
+  tryUrl?: string;
   skills?: string[];
   side?: "left" | "right";
   isLast?: boolean;
@@ -546,6 +553,27 @@ function TimelineEntry({
             )}
           </Box>
         </Box>
+
+        {tryUrl && (
+          <Button
+            component="a"
+            href={tryUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            variant="outlined"
+            size="small"
+            startIcon={<PlayArrowIcon />}
+            sx={{
+              mt: 1.5,
+              color: "secondary.main",
+              borderColor: "secondary.main",
+              "&:hover": { borderColor: "secondary.main", bgcolor: "rgba(255,255,255,0.06)" },
+            }}
+          >
+            Try Now
+          </Button>
+        )}
 
         {skills.length > 0 && <SkillChips items={skills} entryId={entryId} />}
 
@@ -1468,6 +1496,7 @@ export default function PageContent() {
               title="AI Voice Caller"
               startDate="Aug 2024"
               githubUrl="https://github.com/ddombrov/HackThe6ix2024"
+              tryUrl="/call-me-maybe"
               skills={["Next.js", "OpenAI", "ElevenLabs", "Python", "React", "Firebase", "Material UI"]}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>

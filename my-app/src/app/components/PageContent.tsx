@@ -554,6 +554,10 @@ function TimelineEntry({
           </Box>
         </Box>
 
+        {skills.length > 0 && <SkillChips items={skills} entryId={entryId} />}
+
+        {children}
+
         {tryUrl && (
           <Button
             component="a"
@@ -574,10 +578,6 @@ function TimelineEntry({
             Try Now
           </Button>
         )}
-
-        {skills.length > 0 && <SkillChips items={skills} entryId={entryId} />}
-
-        {children}
 
         {report && (
           <Collapse in={expanded} unmountOnExit>
@@ -1728,6 +1728,18 @@ export default function PageContent() {
                 Continuing on with Pepper part-time this semester alongside
                 coursework, after two co-op terms with the company and five
                 co-op terms overall.
+              </Typography>
+            </TimelineEntry>
+
+            <TimelineEntry
+              side="right"
+              tag="Project"
+              title="Maps"
+              startDate="Sep 2026"
+              skills={["TBD"]}
+            >
+              <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
+                Details and tech stack coming soon.
               </Typography>
             </TimelineEntry>
             </CollapsibleYear>

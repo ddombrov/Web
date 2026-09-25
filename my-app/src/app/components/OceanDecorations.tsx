@@ -62,7 +62,7 @@ function randomBubbles(): Bubble[] {
       sway: 5 + Math.random() * 7,
       ...(() => {
         const kind = randomBubbleKind();
-        const size = kind === "photo2" ? Math.round(28 + Math.random() * 22) : Math.round(9 + Math.random() * 15);
+        const size = kind === "photo2" ? Math.round(16 + Math.random() * 10) : Math.round(9 + Math.random() * 15);
         return { kind, size };
       })(),
     }))

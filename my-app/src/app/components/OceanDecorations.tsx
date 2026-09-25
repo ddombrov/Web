@@ -3,7 +3,21 @@
 import { useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 
-type Bubble = { top: string; side: "left" | "right"; offset: number; size: number; duration: number; delay: number; rise: number; sway: number };
+type BubbleKind = "css" | "photo" | "emoji";
+
+type Bubble = { top: string; side: "left" | "right"; offset: number; size: number; duration: number; delay: number; rise: number; sway: number; kind: BubbleKind };
+
+// Three in ten bubbles render as the photo, one in ten as the bubble emoji,
+// and the rest stay the original CSS radial-gradient circle — enough of a
+// mix to read as variety without the photo (a flat, always-front-facing
+// sphere) or the emoji (small and same-looking every time) dominating a
+// scene that's meant to feel like a loose drift of many different bubbles.
+function randomBubbleKind(): BubbleKind {
+  const r = Math.random();
+  if (r < 0.3) return "photo";
+  if (r < 0.4) return "emoji";
+  return "css";
+}
 
 // Bubble clusters scattered down the Journey timeline. Opacity is constant
 // for a bubble's entire life — no fade-out — and the loop-reset jump is
@@ -44,6 +58,7 @@ function randomBubbles(): Bubble[] {
       delay: group.delay,
       rise: group.rise,
       sway: 5 + Math.random() * 7,
+      kind: randomBubbleKind(),
     }))
   );
 }
@@ -544,9 +559,20 @@ export default function OceanDecorations() {
             [b.side]: `${b.offset}%`,
             width: b.size,
             height: b.size,
-            borderRadius: "50%",
-            background: "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.65), rgba(255,255,255,0.1) 70%)",
-            border: "1px solid rgba(255,255,255,0.3)",
+            // The CSS variant paints the sphere itself via background/border;
+            // the photo and emoji variants instead render a child element
+            // below (an <img> / a text glyph), so those two are deliberately
+            // left without a background or border here.
+            ...(b.kind === "css" && {
+              borderRadius: "50%",
+              background: "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.65), rgba(255,255,255,0.1) 70%)",
+              border: "1px solid rgba(255,255,255,0.3)",
+            }),
+            display: b.kind === "emoji" ? "flex" : undefined,
+            alignItems: b.kind === "emoji" ? "center" : undefined,
+            justifyContent: b.kind === "emoji" ? "center" : undefined,
+            fontSize: b.kind === "emoji" ? b.size * 0.9 : undefined,
+            lineHeight: 1,
             // A gentle side-to-side sway layered on top of the steady rise
             // (rather than one straight vertical line) is what actually
             // reads as "floating" instead of "sliding on a rail" — real
@@ -562,7 +588,13 @@ export default function OceanDecorations() {
             },
             "@media (prefers-reduced-motion: reduce)": { animation: "none" },
           }}
-        />
+        >
+          {b.kind === "photo" && (
+            // eslint-disable-next-line @next/next/no-img-element -- decorative, randomly-sized background element; not worth next/image's overhead here
+            <img src="/bubble-photo.webp" alt="" width={b.size} height={b.size} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
+          )}
+          {b.kind === "emoji" && "🫧"}
+        </Box>
       ))}
 
       </Box>

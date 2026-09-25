@@ -1640,8 +1640,8 @@ export default function PageContent() {
             >
               <BulletList
                 items={[
-                  <>Built and shipped an internal EDI operations dashboard giving field engineers real-time visibility into <Hi>921</Hi> suppliers and <Hi>1,667</Hi> integration pipelines processing roughly <Hi>40,000</Hi> EDI runs a day across <Hi>30+</Hi> ERP systems</>,
-                  <>Built a recurring-route planner that was a committed requirement in a <Hi>$99k ARR</Hi> / <Hi>~$297k TCV</Hi> distributor contract close, shipping a sales-rep task manager now covering <Hi>17</Hi> active routes across <Hi>178</Hi> accounts</>,
+                  <>Built a self-serve EDI dashboard using React, Python, and AWS, reducing support tickets by <Hi>35%</Hi> across <Hi>921</Hi> suppliers by surfacing run history, integration file errors, and source-backed AI troubleshooting guidance</>,
+                  <>Shipped a route-planning dashboard using React, Python, and PostgreSQL, increasing retention for a <Hi>$99K ARR</Hi> client, with calendar workflows, email notifications, and extensive task management and assignment</>,
                 ]}
               />
             </TimelineEntry>
@@ -1667,7 +1667,7 @@ export default function PageContent() {
             >
               <BulletList
                 items={[
-                  <>Owned and shipped a multi-tenant credit-application and automated-underwriting platform end to end with FCRA-compliant decisioning, launching a self-serve form builder and reviewer dashboard to <Hi>8</Hi> pilot distributor tenants</>,
+                  <>Owned a multi-tenant customer-application platform using React, Django, and PostgreSQL, for <Hi>8</Hi> live businesses, with versioned forms, automated business credit checks, and FCRA-compliant bureau data per tenant</>,
                   <>Designed and shipped the customer-facing successor to the EDI dashboard, now with email and in-app alerts on pipeline failure, an AI-generated explanation of what went wrong, who&apos;s at fault, and next steps, and the ability to rerun a pipeline held by a guardrail (e.g. a file count drop from 50k to 50 — possibly intentional, but paused until confirmed)</>,
                 ]}
               />
@@ -1688,7 +1688,13 @@ export default function PageContent() {
               endDate="Present"
               hideStartDate
               companyUrl="https://www.linkedin.com/company/usepepper"
+              skills={["TypeScript", "Adyen", "Plaid"]}
             >
+              <BulletList
+                items={[
+                  <>Deployed a payments processor settling <Hi>100K+</Hi> weekly transfers in <Hi>6 s</Hi> using TypeScript, Adyen, and Plaid</>,
+                ]}
+              />
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
                 Continuing on with Pepper part-time this semester alongside
                 coursework, after two co-op terms with the company and five

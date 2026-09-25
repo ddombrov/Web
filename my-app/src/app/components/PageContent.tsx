@@ -55,8 +55,8 @@ const billiardsTableSet: LightboxImage[] = billiardsTableSrcs.map((src) => ({
 // useLayoutEffect once actually running in the browser.
 const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
-// The same scroll-linked scale-up + darken Hero uses on the mountain photo
-// (and ParallaxBand used before it), for a section's own background image.
+// The same scroll-linked scale-up + darken Hero uses on the mountain photo,
+// for a section's own background image.
 // Ramps from 0 (section just touching the bottom of the viewport) to 1
 // (section's top has reached the top of the viewport) — tied to how far
 // the section has scrolled INTO view, not how far it's scrolled past.

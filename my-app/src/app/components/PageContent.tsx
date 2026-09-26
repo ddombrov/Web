@@ -1734,12 +1734,19 @@ export default function PageContent() {
             <TimelineEntry
               side="right"
               tag="Project"
-              title="Maps"
+              title="Itinerary Planner"
               startDate="Sep 2026"
-              skills={["TBD"]}
+              githubUrl="https://github.com/ddombrov/MapsProject"
+              tryUrl="/trip-planner"
+              skills={["Next.js", "TypeScript", "Tailwind CSS", "Google Maps", "Gemini", "OpenAI"]}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
-                Details and tech stack coming soon.
+                Built a trip planner that turns a destination and trip length
+                into a day-by-day itinerary of food and attractions from real
+                Google Places data, checking every AI-picked stop against that
+                real pool. Trips can be edited on a map, calendar, or table,
+                through drag and drop or a chat assistant, and shared with a
+                link.
               </Typography>
             </TimelineEntry>
             </CollapsibleYear>

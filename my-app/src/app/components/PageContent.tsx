@@ -1738,15 +1738,14 @@ export default function PageContent() {
               startDate="Sep 2026"
               githubUrl="https://github.com/ddombrov/MapsProject"
               tryUrl="/trip-planner"
-              skills={["Next.js", "TypeScript", "Tailwind CSS", "Google Maps", "Gemini", "OpenAI"]}
+              skills={["Next.js", "TypeScript", "Tailwind CSS", "Google Maps", "Google Places", "Reddit", "Ticketmaster"]}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
                 Built a trip planner that turns a destination and trip length
-                into a day-by-day itinerary of food and attractions from real
-                Google Places data, checking every AI-picked stop against that
-                real pool. Trips can be edited on a map, calendar, or table,
-                through drag and drop or a chat assistant, and shared with a
-                link.
+                into a day-by-day itinerary of food and attractions, using
+                Google Places data blended with Reddit opinions and Ticketmaster
+                events. Trips can be viewed on a map, calendar, or table,
+                edited with drag and drop, and shared with a link.
               </Typography>
             </TimelineEntry>
             </CollapsibleYear>

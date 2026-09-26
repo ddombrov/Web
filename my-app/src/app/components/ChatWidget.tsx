@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import IconButton from "@mui/material/IconButton";
@@ -32,6 +33,7 @@ function getClientId() {
 // OpenAI key and a per-visitor spend cap server-side — this component only
 // ever sees the reply text back, never the key or the running cost.
 export default function ChatWidget() {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -116,7 +118,8 @@ export default function ChatWidget() {
     }
   };
 
-  if (available === false) return null;
+  // The planner is a full-screen app with its own chat and a bottom tab bar this button would cover.
+  if (available === false || pathname.startsWith("/trip-planner")) return null;
 
   return (
     <Box sx={{ position: "fixed", bottom: { xs: 16, md: 24 }, right: { xs: 16, md: 24 }, zIndex: 1300 }}>

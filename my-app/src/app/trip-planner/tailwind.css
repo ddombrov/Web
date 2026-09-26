@@ -1,0 +1,53 @@
+/* Scoped to the trip planner page only. The planner's Tailwind styles are ported from a
+   standalone app, so the theme, a reset and the utilities all come in here, with the reset
+   confined to .tp-root (see preflight.scoped.css) so it can't touch the rest of the site. */
+@import "tailwindcss/theme.css" layer(theme);
+@import "./preflight.scoped.css" layer(base);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: #1b2a41;
+  --color-primary-hover: #14202f;
+  --color-accent: #d98e33;
+  --font-sans: var(--font-inter);
+}
+
+/* The site's nav is a fixed 64px bar (56px on phones), so the app fills what's left below it. */
+.tp-root {
+  --background: #f7f7f5;
+  --foreground: #1c1c1c;
+  color: var(--foreground);
+  margin-top: 64px;
+  height: calc(100dvh - 64px);
+}
+@media (max-width: 599.95px) {
+  .tp-root {
+    margin-top: 56px;
+    height: calc(100dvh - 56px);
+  }
+}
+
+/* Google's InfoWindow reserves a full row above the content for its close button,
+   which shows up as dead space above our compact SpotDetail cards. Float the close
+   button instead of letting it push the content down. */
+.gm-style-iw-chr {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: auto !important;
+}
+.gm-style-iw-d {
+  overflow: hidden !important;
+}
+
+/* Touch screens: iOS Safari zooms the whole page when a focused field is under 16px, so keep
+   fields at 16px there. */
+@media (pointer: coarse) {
+  .tp-root input,
+  .tp-root select,
+  .tp-root textarea {
+    font-size: 16px !important;
+  }
+}

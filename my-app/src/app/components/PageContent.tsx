@@ -1856,7 +1856,12 @@ export default function PageContent() {
           }}
         />
 
-        <Box sx={{ position: "absolute", inset: 0, zIndex: 1, display: "flex", flexDirection: "column", justifyContent: "center", py: { xs: 10, md: 14 } }}>
+        {/* justifyContent centered the content within a vh-sized box, so the
+            gap below the form scaled up with the viewport's own height on
+            taller screens instead of staying small. Anchoring to the
+            bottom with a small fixed padding keeps that gap short no
+            matter how tall the window is. */}
+        <Box sx={{ position: "absolute", inset: 0, zIndex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", pt: { xs: 10, md: 14 }, pb: { xs: 4, md: 6 } }}>
         <Reveal>
         <Box id="contact" sx={{ width: "100%", scrollMarginTop: { xs: "80px", md: "88px" } }}>
           <Typography

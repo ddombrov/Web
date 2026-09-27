@@ -167,6 +167,10 @@ const oceanEnd = "#0A1F2E";
 const experienceBg = `linear-gradient(180deg, ${oceanStart} 0%, ${oceanEnd} 100%)`;
 // A darker blue beat between the journey's navy end and the ocean photo.
 const deepBlue = "#050D14";
+// True black, used only for the site's very last stretch — the ocean photo
+// fades into this right after the contact form, instead of the warm
+// near-black used elsewhere, so the page ends on a genuinely black beat.
+const pitchBlack = "#000000";
 
 // A plain multi-stop linear-gradient is piecewise-linear: the rate of
 // color change jumps abruptly at every stop, and the eye reads that slope
@@ -1801,14 +1805,14 @@ export default function PageContent() {
           inside it, title first, right above the form. Unlike the cave,
           this one is cropped to a fixed section height (objectFit: cover,
           full width kept) rather than shown at its full — extremely tall —
-          natural height. Both edges fade the same way Hero's own mountain
-          fades into its brown: deepBlue fades in over the photo's own top
-          (so the previous Box hands off into the image itself, not a hard
-          cut), and the trailing edge fades into deepBlue again (the color
-          the next Box picks up from). */}
+          natural height. The top edge fades in from deepBlue the same way
+          Hero's own mountain fades into its brown; the trailing edge fades
+          straight to pitchBlack, close behind the form, so the site ends on
+          black shortly after the contact form rather than a long stretch of
+          empty ocean. */}
       <Box
         ref={contactZoom.ref}
-        sx={{ position: "relative", overflow: "hidden", zIndex: 1, textAlign: "center", background: deepBlue, height: { xs: "122vh", md: "180vh" } }}
+        sx={{ position: "relative", overflow: "hidden", zIndex: 1, textAlign: "center", background: deepBlue, height: { xs: "88vh", md: "108vh" } }}
       >
         <Box
           component="img"
@@ -1845,8 +1849,8 @@ export default function PageContent() {
             left: 0,
             right: 0,
             bottom: 0,
-            height: "20vh",
-            background: `linear-gradient(180deg, ${easedAlphaStops(deepBlue, 0, 1)})`,
+            height: "26vh",
+            background: `linear-gradient(180deg, ${easedAlphaStops(pitchBlack, 0, 1)})`,
           }}
         />
 
@@ -1889,15 +1893,7 @@ export default function PageContent() {
         </Box>
       </Box>
 
-      <Box
-        sx={{
-          height: { xs: "10vh", md: "14vh" },
-          background: `linear-gradient(180deg, ${easedColorStops(deepBlue, "#0F0C07")})`,
-          position: "relative",
-          zIndex: 1,
-        }}
-      />
-      <Box sx={{ height: { xs: "1.5vh", md: "2vh" }, background: "#0F0C07", position: "relative", zIndex: 1 }} />
+      <Box sx={{ height: { xs: "6vh", md: "8vh" }, background: pitchBlack, position: "relative", zIndex: 1 }} />
     </>
     </LayoutGroup>
     </GalleryPortalProvider>

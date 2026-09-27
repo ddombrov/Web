@@ -1806,13 +1806,15 @@ export default function PageContent() {
           this one is cropped to a fixed section height (objectFit: cover,
           full width kept) rather than shown at its full — extremely tall —
           natural height. The top edge fades in from deepBlue the same way
-          Hero's own mountain fades into its brown; the trailing edge fades
-          straight to pitchBlack, close behind the form, so the site ends on
-          black shortly after the contact form rather than a long stretch of
-          empty ocean. */}
+          Hero's own mountain fades into its brown. The bottom fade is tall
+          (well over half the section) so the darkening is one continuous
+          curve starting soon after the form, not a flat mid-tone band that
+          suddenly resumes fading — smoothstep keeps most of that curve
+          short of full black, so only the last stretch, right at the
+          section's own bottom edge, actually reads as pitchBlack. */}
       <Box
         ref={contactZoom.ref}
-        sx={{ position: "relative", overflow: "hidden", zIndex: 1, textAlign: "center", background: deepBlue, height: { xs: "88vh", md: "108vh" } }}
+        sx={{ position: "relative", overflow: "hidden", zIndex: 1, textAlign: "center", background: deepBlue, height: { xs: "82vh", md: "100vh" } }}
       >
         <Box
           component="img"
@@ -1849,7 +1851,7 @@ export default function PageContent() {
             left: 0,
             right: 0,
             bottom: 0,
-            height: "26vh",
+            height: "60vh",
             background: `linear-gradient(180deg, ${easedAlphaStops(pitchBlack, 0, 1)})`,
           }}
         />

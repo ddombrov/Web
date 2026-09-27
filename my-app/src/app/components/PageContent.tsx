@@ -1785,10 +1785,15 @@ export default function PageContent() {
       {/* Experience ends at oceanEnd ("navy blue"); this is the same
           transition pattern used everywhere else on the site — a plain
           eased gradient Box, no photo — carrying that blue down into
-          pitchBlack for Contact, which sits directly on black. */}
+          pitchBlack for Contact, which sits directly on black. Both colors
+          are already dark, so smoothstep's fast middle segment reads as an
+          abrupt step if the box is short (each color looks flat well
+          before the curve mathematically finishes); a tall box like the
+          site's other big section transitions spreads that same curve
+          over enough distance to look gradual again. */}
       <Box
         sx={{
-          height: { xs: "20vh", md: "28vh" },
+          height: { xs: "45vh", md: "60vh" },
           background: `linear-gradient(180deg, ${easedColorStops(oceanEnd, pitchBlack)})`,
           position: "relative",
           zIndex: 1,

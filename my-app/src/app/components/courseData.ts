@@ -128,8 +128,6 @@ export const terms: Term[] = [
       { code: "CIS*4250", name: "Software Design V", description: "Capstone course applying prior Software Design knowledge to a large team project with applied design/development experience." },
       { code: "PHIL*3370", name: "Ethics of Artificial Intelligence", description: "Explores real/possible implications of AI decision-making: privacy, algorithmic bias, social inequality, and moral status of AI." },
       { code: "CTS*3000", name: "Data and Difference", description: "Social categories of difference in digital contexts; identity, bodies, communities, and issues of access/self-representation/social justice." },
-      { code: "MUSC*2150", name: "Music and Popular Culture", description: "Survey of major genres, styles, and performers of 20th-century popular music, examining links to race, class, technology, and art." },
-      { code: "THST*2500", name: "Contemporary Cinema", description: "Review of contemporary cinematic expression through curated film and media texts." },
     ],
   },
 ];

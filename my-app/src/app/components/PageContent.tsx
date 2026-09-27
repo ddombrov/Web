@@ -1325,12 +1325,11 @@ export default function PageContent() {
               aside={<PhotoFrame src="/babyNames.png" alt="Baby Names Frequency Tracker screenshot" width={520} height={293} />}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
-                In Software Design II, me and a group of four collaborated
-                developed a user-friendly menu together, that allowed users to
-                track names&apos; popularities across time and determine their
-                ethnicities. This was implemented by normalizing CSV files to a
-                standard format and converting them to Pandas data frames in
-                Python.
+                Designed a Python program with a team of four to analyze name
+                trends using historical data, identifying popularity and
+                ethnicity patterns over time. Extracted baby name data from
+                CSV files of over 10 countries, converting them into a
+                standardized format and Pandas data frames.
               </Typography>
             </TimelineEntry>
 
@@ -1441,11 +1440,26 @@ export default function PageContent() {
               }
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
-                In CIS*2750, Software Systems Development and Integration, I
-                programmed a C physics library to simulate billiards ball
-                collisions, and then I integrated the program with a
-                Python-based web server to dynamically generate SVG images
-                onto an HTML website.
+                Programmed a C physics library to simulate billiards ball
+                collisions, then integrated it with a Python-based web server
+                to dynamically generate SVG images onto an HTML website.
+              </Typography>
+            </TimelineEntry>
+
+            <TimelineEntry
+              side="left"
+              tag="Project"
+              title="Mancala Board Game"
+              startDate="Feb 2024"
+              hideStartDate
+              githubUrl="https://github.com/ddombrov/MancalaAndAyoGame"
+              skills={["Java", "Swing", "JUnit"]}
+            >
+              <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
+                Developed a Mancala board game in Java with interactive
+                gameplay and unique game logic for Mancala variations. Built
+                the Swing GUI following object-oriented design principles,
+                using encapsulation to protect game state.
               </Typography>
             </TimelineEntry>
 
@@ -1593,8 +1607,8 @@ export default function PageContent() {
               skills={["Flutter", "Dart", "Firestore"]}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
-                In CIS*4030, Mobile Computing, developed a barcode scanning app
-                that retrieves product and sustainability information for{" "}
+                Developed a Flutter barcode scanning app that retrieves
+                product and sustainability information for{" "}
                 <Hi>1M+</Hi> products. Leveraged Firestore for data
                 management, implementing social features, profile settings,
                 and accessibility modes.
@@ -1738,14 +1752,13 @@ export default function PageContent() {
               startDate="Sep 2026"
               githubUrl="https://github.com/ddombrov/MapsProject"
               tryUrl="/trip-planner"
-              skills={["Next.js", "TypeScript", "Tailwind CSS", "Google Maps", "Google Places", "Reddit", "Ticketmaster"]}
+              skills={["Next.js", "TypeScript", "Tailwind CSS", "Google Maps", "Google Places", "Reddit", "Ticketmaster", "Gemini", "OpenAI"]}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
-                Built a trip planner that turns a destination and trip length
-                into a day-by-day itinerary of food and attractions, using
-                Google Places data blended with Reddit opinions and Ticketmaster
-                events. Trips can be viewed on a map, calendar, or table,
-                edited with drag and drop, and shared with a link.
+                Orchestrated AI agents to produce a full day-by-day trip
+                itinerary in 3 seconds with a shareable link by integrating
+                the Google Places, Reddit, and Ticketmaster APIs with
+                structured Gemini and OpenAI output.
               </Typography>
             </TimelineEntry>
             </CollapsibleYear>

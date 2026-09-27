@@ -165,11 +165,8 @@ const cadetGrey = "#91A3B0";
 const oceanStart = "#123044";
 const oceanEnd = "#0A1F2E";
 const experienceBg = `linear-gradient(180deg, ${oceanStart} 0%, ${oceanEnd} 100%)`;
-// A darker blue beat between the journey's navy end and the ocean photo.
-const deepBlue = "#050D14";
-// True black, used only for the site's very last stretch — the ocean photo
-// fades into this right after the contact form, instead of the warm
-// near-black used elsewhere, so the page ends on a genuinely black beat.
+// True black — Contact sits directly on this, so the page ends on a
+// genuinely black beat instead of the warm near-black used elsewhere.
 const pitchBlack = "#000000";
 
 // A plain multi-stop linear-gradient is piecewise-linear: the rate of
@@ -958,10 +955,8 @@ export default function PageContent() {
   const journeyFilterActive = Boolean(filter);
   const journeyFilterClosing = Boolean(prevFilter) && !filter;
   // Cave is shown at its full, uncropped height, so its zoom stays subtle
-  // to avoid visibly cropping the photo; ocean is already cropped to a
-  // fixed box, so it can take the same full zoom Hero's mountain uses.
+  // to avoid visibly cropping the photo.
   const aboutZoom = useSectionZoom(0.06);
-  const contactZoom = useSectionZoom();
   return (
     <GalleryPortalProvider>
     <LayoutGroup>
@@ -1787,81 +1782,24 @@ export default function PageContent() {
         </Container>
       </Box>
 
-      {/* Experience ends at oceanEnd ("navy blue"); a tall single Box holds
-          that navy as a clear stretch, blends through a generous middle
-          section, then holds deepBlue as its own clear stretch before the
-          ocean photo's own top fade takes over. */}
+      {/* Experience ends at oceanEnd ("navy blue"); this is the same
+          transition pattern used everywhere else on the site — a plain
+          eased gradient Box, no photo — carrying that blue down into
+          pitchBlack for Contact, which sits directly on black. */}
       <Box
         sx={{
           height: { xs: "20vh", md: "28vh" },
-          background: `linear-gradient(180deg, ${easedColorStops(oceanEnd, deepBlue)})`,
+          background: `linear-gradient(180deg, ${easedColorStops(oceanEnd, pitchBlack)})`,
           position: "relative",
           zIndex: 1,
         }}
       />
 
-      {/* Contact — the ocean photo is this section's own background (same
-          pattern as About/Hero), so "Contact Me" and the form both sit
-          inside it, title first, right above the form. Unlike the cave,
-          this one is cropped to a fixed section height (objectFit: cover,
-          full width kept) rather than shown at its full — extremely tall —
-          natural height. The top edge fades in from deepBlue the same way
-          Hero's own mountain fades into its brown. The bottom fade is tall
-          (well over half the section) so the darkening is one continuous
-          curve starting soon after the form, not a flat mid-tone band that
-          suddenly resumes fading — smoothstep keeps most of that curve
-          short of full black, so only the last stretch, right at the
-          section's own bottom edge, actually reads as pitchBlack. */}
-      <Box
-        ref={contactZoom.ref}
-        sx={{ position: "relative", overflow: "hidden", zIndex: 1, textAlign: "center", background: deepBlue, height: { xs: "82vh", md: "100vh" } }}
-      >
-        <Box
-          component="img"
-          src="/ocean2.avif"
-          alt="Deep blue ocean"
-          width={3436}
-          height={5164}
-          sx={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            objectPosition: "center",
-            transform: `scale(${contactZoom.scale})`,
-            transformOrigin: "center 50%",
-            filter: `brightness(${contactZoom.brightness})`,
-          }}
-        />
-        <Box sx={{ position: "absolute", inset: 0, background: "rgba(4,9,16,0.6)" }} />
-        <Box
-          sx={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: 0,
-            height: "14vh",
-            background: `linear-gradient(180deg, ${easedAlphaStops(deepBlue, 1, 0)})`,
-          }}
-        />
-        <Box
-          sx={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            height: "60vh",
-            background: `linear-gradient(180deg, ${easedAlphaStops(pitchBlack, 0, 1)})`,
-          }}
-        />
-
-        {/* justifyContent centered the content within a vh-sized box, so the
-            gap below the form scaled up with the viewport's own height on
-            taller screens instead of staying small. Anchoring to the
-            bottom with a small fixed padding keeps that gap short no
-            matter how tall the window is. */}
-        <Box sx={{ position: "absolute", inset: 0, zIndex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", pt: { xs: 10, md: 14 }, pb: { xs: 4, md: 6 } }}>
+      {/* Contact — flat pitchBlack, sized to its own content (no vh height,
+          no background photo), so it just sits at the bottom of the page
+          with a short, fixed amount of padding below it rather than a gap
+          that scales with the viewport. */}
+      <Box sx={{ position: "relative", zIndex: 1, textAlign: "center", background: pitchBlack, pt: { xs: 10, md: 14 }, pb: { xs: 4, md: 6 } }}>
         <Reveal>
         <Box id="contact" sx={{ width: "100%", scrollMarginTop: { xs: "80px", md: "88px" } }}>
           <Typography
@@ -1897,10 +1835,7 @@ export default function PageContent() {
           </Container>
         </Box>
         </Reveal>
-        </Box>
       </Box>
-
-      <Box sx={{ height: { xs: "6vh", md: "8vh" }, background: pitchBlack, position: "relative", zIndex: 1 }} />
     </>
     </LayoutGroup>
     </GalleryPortalProvider>

@@ -781,6 +781,8 @@ function TermCourseworkEntry({
   if (!term || term.courses.length === 0) return null;
   return (
     <TimelineEntry
+      logo="/university_of_guelph_logo.jpg"
+      logoAlt="University of Guelph logo"
       side={side}
       tag={term.upcoming ? "Upcoming" : "Education"}
       title="Student"
@@ -1147,6 +1149,8 @@ export default function PageContent() {
             <CollapsibleEarlyChapters label="2017 – 2022 · Before university (high school)">
               <YearMarker year="2017" />
               <TimelineEntry
+                logo="/ymca_logo.jpg"
+                logoAlt="YMCA logo"
                 side="left"
                 tag="Job"
                 title="Day Camp Volunteer"
@@ -1187,6 +1191,8 @@ export default function PageContent() {
 
               <YearMarker year="2019" />
               <TimelineEntry
+                logo="/bloomex_logo.jpg"
+                logoAlt="Bloomex Canada logo"
                 side="left"
                 tag="Job"
                 title="General Laborer"
@@ -1207,6 +1213,8 @@ export default function PageContent() {
 
               <YearMarker year="2020" />
               <TimelineEntry
+                logo="/ymca_logo.jpg"
+                logoAlt="YMCA logo"
                 side="right"
                 tag="Job"
                 title="Day Camp Counselor"
@@ -1232,6 +1240,8 @@ export default function PageContent() {
                 strictly pre-university chapters above. */}
             <CollapsibleYear year="2022">
             <TimelineEntry
+              logo="/ymca_logo.jpg"
+              logoAlt="YMCA logo"
               side="left"
               tag="Job"
               title="Youth Mentor"
@@ -1648,6 +1658,8 @@ export default function PageContent() {
             <TermCourseworkEntry label="Fall 2025" side="right" />
 
             <TimelineEntry
+              logo="/university_of_guelph_logo.jpg"
+              logoAlt="University of Guelph logo"
               side="left"
               tag="Recommendation"
               title="Recommendation"

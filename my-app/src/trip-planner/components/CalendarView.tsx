@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { ItineraryItem } from '@/trip-planner/lib/types';
+import { getSpotEmoji } from '@/trip-planner/lib/spotEmoji';
 import { buildCalendarWeeks, buildTripDayRow, buildMonthWeeks, todayStr, toDateStr, type CalendarCell } from '@/trip-planner/lib/dates';
 import {
   startItemDrag,
@@ -64,7 +65,7 @@ function CalendarChip({
       }`}
       style={{ backgroundColor: CATEGORY_COLORS[item.category] }}
     >
-      {item.name}
+      {getSpotEmoji(item)} {item.name}
     </button>
   );
 }
@@ -423,7 +424,7 @@ export function CalendarView({
                 }`}
               >
                 <div className="text-[10px] uppercase tracking-wider opacity-80">{item.slot}</div>
-                <div className="text-sm font-semibold">{item.name}</div>
+                <div className="text-sm font-semibold">{getSpotEmoji(item)} {item.name}</div>
               </button>
             ))}
           </div>

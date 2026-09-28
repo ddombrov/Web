@@ -26,7 +26,11 @@ export const AuroraBackground = ({
         )}
         {...props}
       >
-        <div className="absolute inset-0 overflow-hidden">
+        {/* Purely decorative — without pointer-events-none here (the inner div already has
+            it), this absolutely positioned wrapper sits above the unpositioned page content
+            in the browser's default stacking order and silently swallows clicks on whatever
+            happens to be underneath it, like the advanced-settings toggle. */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div
             className={cn(
               `

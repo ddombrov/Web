@@ -242,6 +242,7 @@ export default function TripPlannerPage() {
   const [showImport, setShowImport] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [shareEncoded, setShareEncoded] = useState<string | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
   const [mobilePane, setMobilePane] = useState<'plan' | 'view'>('plan');
   const [notice, setNotice] = useState<string | null>(null);
   const [movingItem, setMovingItem] = useState<ItineraryItem | null>(null);
@@ -662,8 +663,10 @@ export default function TripPlannerPage() {
     calendar: calendarSubView,
   };
 
+  // Page lives at /trip-planner, not the domain root — origin alone would build a link back
+  // to the homepage instead of here, so the current path has to come along too.
   const shareUrl = shareEncoded
-    ? window.location.origin + '/' + buildShareHash(shareEncoded, currentShareOptions)
+    ? window.location.origin + window.location.pathname + buildShareHash(shareEncoded, currentShareOptions)
     : null;
 
   const openShare = async () => {
@@ -674,8 +677,10 @@ export default function TripPlannerPage() {
       itinerary,
     });
     setShareEncoded(encoded);
+    setShareCopied(false);
     navigator.clipboard
-      .writeText(window.location.origin + '/' + buildShareHash(encoded, currentShareOptions))
+      .writeText(window.location.origin + window.location.pathname + buildShareHash(encoded, currentShareOptions))
+      .then(() => setShareCopied(true))
       .catch(() => {});
   };
 
@@ -1404,10 +1409,15 @@ export default function TripPlannerPage() {
                 />
                 <button
                   type="button"
-                  onClick={() => navigator.clipboard.writeText(shareUrl ?? '')}
+                  onClick={() =>
+                    navigator.clipboard
+                      .writeText(shareUrl ?? '')
+                      .then(() => setShareCopied(true))
+                      .catch(() => {})
+                  }
                   className="px-3 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary-hover"
                 >
-                  Copy
+                  {shareCopied ? 'Copied!' : 'Copy'}
                 </button>
               </div>
               <p className="text-[10px] text-gray-400">{(shareUrl ?? '').length.toLocaleString()} characters</p>

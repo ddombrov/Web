@@ -1232,33 +1232,31 @@ export default function PageContent() {
                 />
               </TimelineEntry>
 
+              <YearMarker year="2022" />
+              <TimelineEntry
+                logo="/ymca_logo.jpg"
+                logoAlt="YMCA logo"
+                side="left"
+                tag="Job"
+                title="Youth Mentor"
+                org="YMCA Canada"
+                location="Cambridge, Ontario"
+                startDate="Jun 2022"
+                endDate="Jul 2023"
+                skills={["Mentorship", "Public Speaking", "Performance Evaluation"]}
+              >
+                <BulletList
+                  items={[
+                    <>Taught leaders in training how to work with children, run games, lead activities, and bond with campers</>,
+                    <>Lectured students on safety when working with children and the responsibility associated with their role</>,
+                    <>Evaluated the leaders in training, providing daily feedback, and submitting results to hiring managers</>,
+                  ]}
+                />
+              </TimelineEntry>
+
             </CollapsibleEarlyChapters>
 
-            {/* Runs into university (through Jul 2023), so it stays visible
-                in the main timeline rather than collapsed with the
-                strictly pre-university chapters above. */}
             <CollapsibleYear year="2022">
-            <TimelineEntry
-              logo="/ymca_logo.jpg"
-              logoAlt="YMCA logo"
-              side="left"
-              tag="Job"
-              title="Youth Mentor"
-              org="YMCA Canada"
-              location="Cambridge, Ontario"
-              startDate="Jun 2022"
-              endDate="Jul 2023"
-              skills={["Mentorship", "Public Speaking", "Performance Evaluation"]}
-            >
-              <BulletList
-                items={[
-                  <>Taught leaders in training how to work with children, run games, lead activities, and bond with campers</>,
-                  <>Lectured students on safety when working with children and the responsibility associated with their role</>,
-                  <>Evaluated the leaders in training, providing daily feedback, and submitting results to hiring managers</>,
-                ]}
-              />
-            </TimelineEntry>
-
             <TimelineEntry
               logo="/university_of_guelph_logo.jpg"
               logoAlt="University of Guelph logo"

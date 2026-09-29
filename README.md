@@ -9,7 +9,8 @@ voice-calling demo (`/call-me-maybe`), and a trip itinerary planner (`/trip-plan
 - Tailwind is used only by the `/call-me-maybe` page
 - Cloudflare Pages Functions (`my-app/functions/api/`) for the server-side pieces: the chat endpoint
   the voice-call endpoints (OpenAI, ElevenLabs, Twilio), and the trip planner's endpoints
-  (`functions/api/trip-planner/`: Google Places, Geocoding and Routes, Gemini, OpenAI, Reddit, Ticketmaster).
+  (`functions/api/trip-planner/`: Google Places, Geocoding and Routes, Gemini, OpenAI, Reddit, Ticketmaster,
+  and a Supabase-backed shared pool of real places per city — optional, see below).
   Usage limits use Workers KV, generated call audio is stored in R2.
 
 ## Layout
@@ -39,6 +40,13 @@ adds `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, `GOOGLE_PLACES_API_KEY`, `GEMINI_API_KEY
 `REDDIT_CLIENT_SECRET`, and `TICKETMASTER_API_KEY` (Reddit and Ticketmaster are optional). The same names must
 be set as environment variables on the Cloudflare Pages project. The Maps key is served to the browser at runtime
 by `/api/trip-planner/config` and must be restricted to the site's domains in Google Cloud.
+
+`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (also optional) back a shared pool of real places per
+city — see `src/trip-planner/lib/cityPool.ts`. Every generation adds its real places to that city's
+pool, and sharing a trip also adds any custom places, so a popular city accumulates more candidates
+over time on top of each request's own fresh Google search. Generation works exactly the same without
+these set; the pool is a pure bonus, never a dependency. The service role key must never be exposed to
+the browser — it's read only by the Pages Functions, never sent to the client.
 
 ## Deploying
 

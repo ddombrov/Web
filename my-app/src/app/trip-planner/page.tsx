@@ -685,6 +685,15 @@ export default function TripPlannerPage() {
     navigator.clipboard
       .writeText(window.location.origin + window.location.pathname + buildShareHash(encoded, currentShareOptions))
       .catch(() => {});
+
+    // Captures any custom places (a dropped pin, a typed address, an imported row) into the
+    // shared city pool — the itinerary route already contributes generated places on its own,
+    // but never sees hand-added ones. Fire-and-forget: never blocks or affects sharing itself.
+    fetch('/api/trip-planner/contribute-places', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ location, itinerary }),
+    }).catch(() => {});
   };
 
   const shareMapsLinks = mapDayFilter === 'all' ? mapsLinks : mapsLinks.filter((l) => l.day === mapDayFilter);

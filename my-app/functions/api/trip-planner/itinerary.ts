@@ -15,6 +15,7 @@ import { generateItinerary } from '../../../src/trip-planner/lib/generateItinera
 import type { RawPlace } from '../../../src/trip-planner/lib/rawPlace';
 import { checkRateLimit, clientIp, tooManyRequests, TEN_MINUTES_MS } from '../../../src/trip-planner/lib/rateLimit';
 import { FULL_BUILDS_PER_WINDOW } from '../../../src/trip-planner/lib/limits';
+import { isCityPoolConfigured, cityKeyFor, getCityPoolCandidates, contributePlaces } from '../../../src/trip-planner/lib/cityPool';
 
 const MAX_SPOTS = 50;
 const SCOPED_REGENS_PER_WINDOW = 20;
@@ -42,7 +43,7 @@ async function fetchPlaces(textQuery: string, targetCount: number): Promise<{ pl
       headers: {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': process.env.GOOGLE_PLACES_API_KEY!,
-        'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.location,places.rating,places.reviews,places.regularOpeningHours,nextPageToken',
+        'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.reviews,places.regularOpeningHours,nextPageToken',
       },
       body: JSON.stringify(body),
     });
@@ -62,7 +63,7 @@ async function fetchPlaces(textQuery: string, targetCount: number): Promise<{ pl
   return { places };
 }
 
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+export const onRequestPost: PagesFunction<Env> = async ({ request, env, waitUntil }) => {
   installEnv(env);
   // Given back if the build fails on our side, so an outage doesn't use up the user's attempts.
   let refundAttempt = () => {};
@@ -152,6 +153,19 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     if (foodResult.error && attractionResult.error) {
       refundAttempt();
       return Response.json({ error: 'Failed to fetch places' }, { status: 502 });
+    }
+
+    // Extra candidates accumulated from everyone's past trips to this same city, on top of
+    // today's fresh search — skipped entirely (never blocking or failing the request) if
+    // Supabase isn't configured, slow, or down. See cityPool.ts.
+    const cityKey = cityKeyFor(location);
+    if (isCityPoolConfigured()) {
+      const alreadyHaveKeys = new Set(
+        [...foodResult.places, ...attractionResult.places].map((p) => `${p.displayName?.text ?? ''}|${p.formattedAddress ?? ''}`.toLowerCase()),
+      );
+      const pool = await getCityPoolCandidates(cityKey, alreadyHaveKeys);
+      foodResult.places = [...foodResult.places, ...pool.food];
+      attractionResult.places = [...attractionResult.places, ...pool.attraction];
     }
 
     const rawPlaces = mergePlaces(foodResult.places, attractionResult.places);
@@ -295,6 +309,12 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       reviewHighlights: findReviewHighlights(rawPlaces, item.name, item.address, preferenceTerms),
       openingHours: findOpeningHours(rawPlaces, item.name, item.address),
     }));
+
+    // Adds this trip's real places back to the shared pool for next time, after the response
+    // is sent rather than before, so a slow Supabase write never adds latency to the request.
+    if (isCityPoolConfigured()) {
+      waitUntil(contributePlaces(cityKey, itineraryWithReviews, 'google'));
+    }
 
     const response = { itinerary: itineraryWithReviews, warnings };
 

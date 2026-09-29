@@ -6,6 +6,8 @@ export interface Env {
   REDDIT_CLIENT_ID?: string;
   REDDIT_CLIENT_SECRET?: string;
   TICKETMASTER_API_KEY?: string;
+  SUPABASE_URL?: string;
+  SUPABASE_SERVICE_ROLE_KEY?: string;
 }
 
 // The planner's server code (src/trip-planner/lib) was written against

@@ -771,7 +771,7 @@ export default function TripPlannerPage() {
       >
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-            Itinerary Planner
+            AI Vacation Planner
           </h1>
           <div className="flex items-center gap-1.5">
             {itinerary.length > 0 && (

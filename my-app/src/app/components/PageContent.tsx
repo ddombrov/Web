@@ -1757,11 +1757,11 @@ export default function PageContent() {
             <TimelineEntry
               side="right"
               tag="Project"
-              title="Itinerary Planner"
+              title="AI Vacation Planner"
               startDate="Sep 2026"
               githubUrl="https://github.com/ddombrov/MapsProject"
               tryUrl="/trip-planner"
-              skills={["Next.js", "TypeScript", "Tailwind CSS", "Google Maps", "Google Places", "Reddit", "Ticketmaster", "Gemini", "OpenAI"]}
+              skills={["Next.js", "TypeScript", "Tailwind CSS", "Google Maps", "Google Places", "Reddit", "Ticketmaster", "Gemini", "OpenAI", "Supabase"]}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
                 Orchestrated AI agents to produce a full day-by-day trip

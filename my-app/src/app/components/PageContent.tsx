@@ -877,7 +877,7 @@ function BulletList({ items }: { items: React.ReactNode[] }) {
   return (
     <List dense sx={{ mt: 1 }}>
       {items.map((item, i) => (
-        <ListItem key={i} sx={{ py: 0.25, display: "list-item", listStyleType: "disc", ml: 2.5, pl: 0.5, width: "auto" }}>
+        <ListItem key={i} sx={{ py: 0.25, display: "list-item", listStyleType: "disc", color: "#EDEFF3", ml: 2.5, pl: 0.5, width: "auto" }}>
           <ListItemText primary={<Box sx={{ color: "#EDEFF3", textShadow }}>{item}</Box>} />
         </ListItem>
       ))}

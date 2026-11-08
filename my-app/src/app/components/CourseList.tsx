@@ -5,7 +5,7 @@ import type { Course } from "./courseData";
 
 function CourseRow({ course, expanded }: { course: Course; expanded: boolean }) {
   return (
-    <Box sx={{ borderBottom: "1px solid rgba(255,255,255,0.07)", py: 0.85 }}>
+    <Box sx={{ borderBottom: "1px solid rgba(255,255,255,0.07)", py: 0.85, display: "list-item", listStyleType: "disc", color: "rgba(255,255,255,0.85)", ml: 2.5, pl: 0.5 }}>
       <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.85)", textShadow }}>
         {expanded && (
           <Box component="span" sx={{ color: "rgba(255,255,255,0.5)", fontFamily: "monospace", fontSize: "0.8em", mr: 1 }}>

@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from 'react';
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
-import type { CategorySelection } from '@/trip-planner/components/CategoryPreferenceGroup';
+import type { CategorySelection } from '@/app/trip-planner/components/CategoryPreferenceGroup';
 
 interface Props {
   value: CategorySelection;

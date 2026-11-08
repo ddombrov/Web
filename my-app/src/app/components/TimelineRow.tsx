@@ -55,7 +55,7 @@ export function TimelineDot({
           height: 16,
           borderRadius: "50%",
           flexShrink: 0,
-          bgcolor: "secondary.main",
+          bgcolor: "#FFD749",
           boxShadow: "0 0 0 4px rgba(255,255,255,0.08)",
         }}
       />

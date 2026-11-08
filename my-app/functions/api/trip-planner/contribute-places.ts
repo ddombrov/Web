@@ -1,8 +1,8 @@
 /// <reference types="@cloudflare/workers-types" />
 import { installEnv, type Env } from './_env';
-import type { ItineraryItem } from '../../../src/trip-planner/lib/types';
-import { enforceRateLimit } from '../../../src/trip-planner/lib/rateLimit';
-import { isCityPoolConfigured, cityKeyFor, contributePlaces } from '../../../src/trip-planner/lib/cityPool';
+import type { ItineraryItem } from '../../../src/app/trip-planner/lib/types';
+import { enforceRateLimit } from '../../../src/app/trip-planner/lib/rateLimit';
+import { isCityPoolConfigured, cityKeyFor, contributePlaces } from '../../../src/app/trip-planner/lib/cityPool';
 
 // Called when a trip is shared (see openShare in page.tsx), on top of the automatic
 // contribution every generation already makes — this is what actually captures a user's own

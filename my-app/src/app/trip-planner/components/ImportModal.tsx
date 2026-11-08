@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { X, Upload } from 'lucide-react';
-import type { ItineraryItem } from '@/trip-planner/lib/types';
-import { parseCsv, parseIcal, finalizeImportedRows } from '@/trip-planner/lib/importParsers';
+import type { ItineraryItem } from '@/app/trip-planner/lib/types';
+import { parseCsv, parseIcal, finalizeImportedRows } from '@/app/trip-planner/lib/importParsers';
 
 interface Props {
   onImport: (items: ItineraryItem[]) => void;

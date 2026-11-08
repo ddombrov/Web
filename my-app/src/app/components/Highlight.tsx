@@ -5,7 +5,7 @@ import Box from "@mui/material/Box";
 // number keeps the context that explains what it means.
 export default function Highlight({ children }: { children: React.ReactNode }) {
   return (
-    <Box component="span" sx={{ color: "secondary.main", fontWeight: 700 }}>
+    <Box component="span" sx={{ color: "#FF9A00", fontWeight: 700 }}>
       {children}
     </Box>
   );

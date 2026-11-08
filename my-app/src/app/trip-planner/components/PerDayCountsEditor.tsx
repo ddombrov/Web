@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import type { DayCounts } from '@/trip-planner/lib/types';
+import type { DayCounts } from '@/app/trip-planner/lib/types';
 
 interface Props {
   value: DayCounts[];

@@ -18,7 +18,7 @@ voice-calling demo (`/call-me-maybe`), and a trip itinerary planner (`/trip-plan
 ```
 my-app/
   src/app/            pages and components (components/PageContent.tsx holds the timeline content)
-  src/trip-planner/   the trip planner's components and libraries (used by app/trip-planner and its functions)
+  src/app/trip-planner/   the trip planner: page, plus its components/ and lib/ (lib is also used by its functions)
   functions/api/      Cloudflare Pages Functions
   public/             images, logos, voice samples
 ```
@@ -42,7 +42,7 @@ be set as environment variables on the Cloudflare Pages project. The Maps key is
 by `/api/trip-planner/config` and must be restricted to the site's domains in Google Cloud.
 
 `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (also optional) back a shared pool of real places per
-city — see `src/trip-planner/lib/cityPool.ts`. Every generation adds its real places to that city's
+city — see `src/app/trip-planner/lib/cityPool.ts`. Every generation adds its real places to that city's
 pool, and sharing a trip also adds any custom places, so a popular city accumulates more candidates
 over time on top of each request's own fresh Google search. Generation works exactly the same without
 these set; the pool is a pure bonus, never a dependency. The service role key must never be exposed to

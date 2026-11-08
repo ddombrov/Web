@@ -7,11 +7,14 @@ type BubbleKind = "css" | "photo1" | "photo2";
 
 type Bubble = { top: string; side: "left" | "right"; offset: number; size: number; duration: number; delay: number; rise: number; sway: number; kind: BubbleKind };
 
-const PHOTO_SRC: Record<"photo1" | "photo2", string> = {
+const PHOTO_SRC: Record<BubbleKind, string> = {
+  css: "/bubble-photo.webp",
   photo1: "/bubble-photo.webp",
   photo2: "/bubble-blue.webp",
 };
 
+// The "css" kind no longer paints its own sphere — it keeps its own size
+// range and share of the mix, but renders the soap-bubble photo like photo1.
 // Size range (px) per bubble type: photo1 (the iridescent soap bubble) runs
 // 25% larger than the base CSS range, photo2 (the glossy blue sphere) is
 // deliberately smaller since its solid fill reads heavier at the same size.
@@ -107,9 +110,6 @@ function BubbleBurst({ originSide, originOffset }: { originSide: "left" | "right
             [originSide]: `calc(${originOffset}% - 8px)`,
             width: b.size,
             height: b.size,
-            borderRadius: "50%",
-            background: "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.7), rgba(255,255,255,0.15) 70%)",
-            border: "1px solid rgba(255,255,255,0.35)",
             animation: `chestBubbleRise ${b.duration}s ease-out ${b.delay}s forwards`,
             "@keyframes chestBubbleRise": {
               "0%": { transform: "translate(0,0)", opacity: 0.9 },
@@ -117,7 +117,10 @@ function BubbleBurst({ originSide, originOffset }: { originSide: "left" | "right
             },
             "@media (prefers-reduced-motion: reduce)": { animation: "none" },
           }}
-        />
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element -- decorative */}
+          <img src={PHOTO_SRC.css} alt="" width={b.size} height={b.size} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
+        </Box>
       ))}
     </>
   );
@@ -580,14 +583,6 @@ export default function OceanDecorations() {
             [b.side]: `${b.offset}%`,
             width: b.size,
             height: b.size,
-            // The CSS variant paints the sphere itself via background/border;
-            // the photo variant instead renders an <img> child below, so
-            // it's deliberately left without a background or border here.
-            ...(b.kind === "css" && {
-              borderRadius: "50%",
-              background: "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.65), rgba(255,255,255,0.1) 70%)",
-              border: "1px solid rgba(255,255,255,0.3)",
-            }),
             // A gentle side-to-side sway layered on top of the steady rise
             // (rather than one straight vertical line) is what actually
             // reads as "floating" instead of "sliding on a rail" — real
@@ -604,10 +599,8 @@ export default function OceanDecorations() {
             "@media (prefers-reduced-motion: reduce)": { animation: "none" },
           }}
         >
-          {(b.kind === "photo1" || b.kind === "photo2") && (
-            // eslint-disable-next-line @next/next/no-img-element -- decorative, randomly-sized background element; not worth next/image's overhead here
-            <img src={PHOTO_SRC[b.kind]} alt="" width={b.size} height={b.size} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
-          )}
+          {/* eslint-disable-next-line @next/next/no-img-element -- decorative, randomly-sized background element; not worth next/image's overhead here */}
+          <img src={PHOTO_SRC[b.kind]} alt="" width={b.size} height={b.size} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
         </Box>
       ))}
 

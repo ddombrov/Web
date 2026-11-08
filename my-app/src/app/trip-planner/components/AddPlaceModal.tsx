@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import type { ItineraryItem } from '@/trip-planner/lib/types';
+import type { ItineraryItem } from '@/app/trip-planner/lib/types';
 
-import { formatTripDate } from '@/trip-planner/lib/dates';
+import { formatTripDate } from '@/app/trip-planner/lib/dates';
 
 interface Props {
   days: number;

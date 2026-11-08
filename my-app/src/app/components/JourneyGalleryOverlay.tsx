@@ -132,7 +132,7 @@ export default function JourneyGalleryOverlay() {
                 <Typography
                   key={name}
                   variant="overline"
-                  sx={{ order: i * 1000 - 1, flexBasis: "100%", textAlign: "center", color: "secondary.main", textShadow, letterSpacing: 2, mt: i === 0 ? 0 : 3 }}
+                  sx={{ order: i * 1000 - 1, flexBasis: "100%", textAlign: "center", color: "#FF9A00", textShadow, letterSpacing: 2, mt: i === 0 ? 0 : 3 }}
                 >
                   {name}
                 </Typography>

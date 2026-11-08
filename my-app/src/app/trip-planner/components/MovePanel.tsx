@@ -1,6 +1,6 @@
 'use client';
 
-import type { ItineraryItem } from '@/trip-planner/lib/types';
+import type { ItineraryItem } from '@/app/trip-planner/lib/types';
 
 const SLOTS: ItineraryItem['slot'][] = ['Morning', 'Afternoon', 'Evening'];
 

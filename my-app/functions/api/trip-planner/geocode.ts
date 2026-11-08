@@ -1,6 +1,6 @@
 /// <reference types="@cloudflare/workers-types" />
 import { installEnv, type Env } from './_env';
-import { enforceRateLimit } from '../../../src/trip-planner/lib/rateLimit';
+import { enforceRateLimit } from '../../../src/app/trip-planner/lib/rateLimit';
 
 interface GeocodeResult {
   formatted_address: string;

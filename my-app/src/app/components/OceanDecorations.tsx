@@ -8,16 +8,15 @@ type BubbleKind = "css" | "photo1" | "photo2";
 type Bubble = { top: string; side: "left" | "right"; offset: number; size: number; duration: number; delay: number; rise: number; sway: number; kind: BubbleKind };
 
 const PHOTO_SRC: Record<BubbleKind, string> = {
-  css: "/bubble-photo.webp",
-  photo1: "/bubble-photo.webp",
+  css: "/bubble-blue.webp",
+  photo1: "/bubble-blue.webp",
   photo2: "/bubble-blue.webp",
 };
 
-// The "css" kind no longer paints its own sphere — it keeps its own size
-// range and share of the mix, but renders the soap-bubble photo like photo1.
-// Size range (px) per bubble type: photo1 (the iridescent soap bubble) runs
-// 25% larger than the base CSS range, photo2 (the glossy blue sphere) is
-// deliberately smaller since its solid fill reads heavier at the same size.
+// Every kind renders the same glossy blue bubble image; the kinds only
+// differ in their size range and share of the mix.
+// Size range (px) per bubble type: photo1 runs 25% larger than the base
+// range, photo2 is deliberately smaller.
 const BASE_SIZE = { min: 9, span: 15 };
 const SIZE: Record<BubbleKind, { min: number; span: number }> = {
   css: BASE_SIZE,

@@ -502,7 +502,7 @@ function TimelineEntry({
         }
         sx={{
           bgcolor: "rgba(255,255,255,0.045)",
-          border: "1px solid rgba(255,255,255,0.09)",
+          border: "1px solid #fff",
           borderRadius: 3,
           p: { xs: 2.5, md: 3 },
           width: { md: cardFlies ? 420 : "auto" },
@@ -511,7 +511,7 @@ function TimelineEntry({
           transition: "transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease, background-color 0.3s ease",
           "&:hover": {
             transform: "translateY(-4px)",
-            borderColor: "rgba(255,255,255,0.22)",
+            borderColor: "#fff",
             bgcolor: "rgba(255,255,255,0.07)",
             boxShadow: "0 20px 40px -20px rgba(0,0,0,0.6)",
           },
@@ -760,7 +760,7 @@ function TermHeader({ label }: { label: string }) {
   return (
     <Box sx={{ display: "grid", gridTemplateColumns: { xs: "70px 1fr", md: "1fr 130px 1fr" }, columnGap: { xs: 2, md: 4 }, mb: 1.5 }}>
       <Box sx={{ gridColumn: { xs: "1", md: "2" }, display: "flex", justifyContent: "center" }}>
-        <Box sx={{ width: "2px", height: 22, bgcolor: "rgba(255,255,255,0.18)" }} />
+        <Box sx={{ width: "2px", height: 22, bgcolor: "#2391FF" }} />
       </Box>
       <Box sx={{ gridColumn: { xs: "2", md: "1 / -1" }, textAlign: "center" }}>
         <Typography variant="subtitle1" sx={{ color: "rgba(255,255,255,0.6)", textShadow, fontWeight: 700, letterSpacing: 1 }}>
@@ -901,10 +901,10 @@ function RecommendationCard({
   photo?: string;
 }) {
   return (
-    <Box sx={{ borderLeft: "3px solid", borderColor: "secondary.main", pl: 3, py: 0.5 }}>
+    <Box sx={{ borderLeft: "3px solid", borderColor: "#FF9A00", pl: 3, py: 0.5 }}>
       <Typography
         aria-hidden
-        sx={{ color: "secondary.main", fontSize: "3rem", lineHeight: 0.6, fontFamily: "Georgia, serif" }}
+        sx={{ color: "#FF9A00", fontSize: "3rem", lineHeight: 0.6, fontFamily: "Georgia, serif" }}
       >
         &ldquo;
       </Typography>

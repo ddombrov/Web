@@ -44,7 +44,7 @@ export default function CollapsibleYear({
             alignItems: "center",
           }}
         >
-          <Box sx={{ width: "2px", height: 24, bgcolor: "rgba(255,255,255,0.18)" }} />
+          <Box sx={{ width: "2px", height: 24, bgcolor: "#2391FF" }} />
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, my: 0.5 }}>
             <Typography
               sx={{
@@ -63,7 +63,7 @@ export default function CollapsibleYear({
               <KeyboardArrowDownIcon sx={{ color: "rgba(255,255,255,0.55)" }} />
             )}
           </Box>
-          <Box sx={{ flex: 1, width: "2px", bgcolor: "rgba(255,255,255,0.18)", minHeight: 24 }} />
+          <Box sx={{ flex: 1, width: "2px", bgcolor: "#2391FF", minHeight: 24 }} />
         </Box>
       </Box>
       {open && children}

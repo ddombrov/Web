@@ -118,8 +118,8 @@ export default function ChatWidget() {
     }
   };
 
-  // The planner is a full-screen app with its own chat and a bottom tab bar this button would cover.
-  if (available === false || pathname.startsWith("/trip-planner")) return null;
+  // Project pages stand on their own: the planner is a full-screen app with its own chat and a bottom tab bar this button would cover, and the voice-call demo has its own controls.
+  if (available === false || pathname.startsWith("/trip-planner") || pathname.startsWith("/call-me-maybe")) return null;
 
   return (
     <Box sx={{ position: "fixed", bottom: { xs: 16, md: 24 }, right: { xs: 16, md: 24 }, zIndex: 1300 }}>

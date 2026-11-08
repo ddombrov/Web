@@ -8,6 +8,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { useJourneyFilter } from "./JourneyFilterContext";
 import { useGalleryPortal } from "./GalleryPortalContext";
 import { textShadow } from "./styles";
+import { skillCategories, skillCategoryIndex } from "./skillCategories";
 
 const heading: Record<string, string> = {
   skills: "Skills from across my journey",
@@ -23,12 +24,14 @@ const heading: Record<string, string> = {
 // lands here, rather than fading in from nowhere.
 export default function JourneyGalleryOverlay() {
   const { filter, prevFilter, setFilter } = useJourneyFilter();
-  const { setCardsTarget, setSkillsTarget } = useGalleryPortal();
+  const { setCardsTarget, setSkillsTarget, mountedSkills } = useGalleryPortal();
   const active = Boolean(filter);
   // Closing (an active filter clearing) should snap away quickly, matching
   // how fast the badges/cards themselves now hide — only the initial
   // reveal (off to on) uses the slow, traceable timing.
   const closing = Boolean(prevFilter) && !filter;
+  const presentCategories =
+    filter === "skills" ? new Set([...mountedSkills()].map(skillCategoryIndex)) : new Set<number>();
 
   // The overlay is a fixed, full-viewport layer — that alone doesn't stop
   // wheel/touch input from scrolling the (visually hidden) timeline behind
@@ -123,7 +126,19 @@ export default function JourneyGalleryOverlay() {
               alignContent: "flex-start",
               maxWidth: 900,
             }}
-          />
+          >
+            {skillCategories.map((name, i) =>
+              presentCategories.has(i) ? (
+                <Typography
+                  key={name}
+                  variant="overline"
+                  sx={{ order: i * 1000 - 1, flexBasis: "100%", textAlign: "center", color: "secondary.main", textShadow, letterSpacing: 2, mt: i === 0 ? 0 : 3 }}
+                >
+                  {name}
+                </Typography>
+              ) : null
+            )}
+          </Box>
           <Box
             ref={(el: HTMLDivElement | null) => setCardsTarget(el)}
             onClick={(e) => e.stopPropagation()}

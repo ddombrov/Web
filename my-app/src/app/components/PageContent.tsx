@@ -29,6 +29,7 @@ import CourseList from "./CourseList";
 import { terms } from "./courseData";
 import { coopReports, type CoopReport, type ReportPhoto } from "./coopReports";
 import { skillIcons } from "./skillIcons";
+import { skillOrder } from "./skillCategories";
 import ContactForm from "./ContactForm";
 import { textShadow, dropShadow, chipSx, photoFrameSx } from "./styles";
 import { useJourneyFilter, tagMatchesFilter } from "./JourneyFilterContext";
@@ -261,18 +262,27 @@ function skillIcon(label: string) {
 // re-parented. Outside of that filter it just renders in place as before.
 function SkillChips({ items, entryId }: { items: string[]; entryId: string }) {
   const { filter, prevFilter } = useJourneyFilter();
-  const { skillsTarget } = useGalleryPortal();
+  const { skillsTarget, registerSkills, isSkillOwner } = useGalleryPortal();
+  const rowRef = useRef<HTMLDivElement>(null);
+  const itemsKey = items.join("|");
+  useEffect(() => {
+    if (!rowRef.current) return;
+    return registerSkills(entryId, rowRef.current, items);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entryId, itemsKey]);
   const flying = filter === "skills";
   const wasFlying = prevFilter === "skills";
   const returning = wasFlying && !flying;
   return (
-    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1.5 }}>
+    <Box ref={rowRef} sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1.5 }}>
       {items.map((s, i) => {
+        if (flying && !isSkillOwner(entryId, s)) return null;
         const chipId = `chip-${entryId}-${i}-${slug(s)}`;
         const chipEl = (
           <motion.div
             key={chipId}
             layoutId={chipId}
+            style={flying ? { order: skillOrder(s) } : undefined}
             transition={
               returning
                 ? { duration: 0.4, ease: [0.4, 0, 1, 1] }
@@ -867,7 +877,7 @@ function BulletList({ items }: { items: React.ReactNode[] }) {
   return (
     <List dense sx={{ mt: 1 }}>
       {items.map((item, i) => (
-        <ListItem key={i} sx={{ py: 0.25 }}>
+        <ListItem key={i} sx={{ py: 0.25, display: "list-item", listStyleType: "disc", ml: 2.5, pl: 0.5, width: "auto" }}>
           <ListItemText primary={<Box sx={{ color: "#EDEFF3", textShadow }}>{item}</Box>} />
         </ListItem>
       ))}

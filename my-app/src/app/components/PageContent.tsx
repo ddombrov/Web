@@ -529,7 +529,7 @@ function TimelineEntry({
           )}
           <Box sx={{ flex: 1, minWidth: 200 }}>
             {tag && (
-              <Typography variant="overline" sx={{ color: "secondary.main", textShadow, letterSpacing: 1.5, display: "block", lineHeight: 1.4 }}>
+              <Typography variant="overline" sx={{ color: "#FF9A00", textShadow, letterSpacing: 1.5, display: "block", lineHeight: 1.4 }}>
                 {tag}
               </Typography>
             )}
@@ -734,7 +734,7 @@ function WorkTermReport({ report }: { report: CoopReport }) {
             <Box sx={{ mb: 2 }}>
               <PhotoFrame src={s.photo.src} alt={s.photo.alt} width={width} height={height} />
             </Box>
-            <Typography variant="overline" sx={{ color: "secondary.main", textShadow, letterSpacing: 1.5, display: "block" }}>
+            <Typography variant="overline" sx={{ color: "#FF9A00", textShadow, letterSpacing: 1.5, display: "block" }}>
               {s.heading}
             </Typography>
             <Stack spacing={1.5} sx={{ mt: 0.5 }}>

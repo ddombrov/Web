@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import type { ItineraryItem } from '@/trip-planner/lib/types';
-import { sourcesForItem } from '@/trip-planner/lib/sources';
-import { hoursNoteForItem } from '@/trip-planner/lib/openingHours';
-import { MovePanel } from '@/trip-planner/components/MovePanel';
+import type { ItineraryItem } from '@/app/trip-planner/lib/types';
+import { sourcesForItem } from '@/app/trip-planner/lib/sources';
+import { hoursNoteForItem } from '@/app/trip-planner/lib/openingHours';
+import { MovePanel } from '@/app/trip-planner/components/MovePanel';
 
 interface Props {
   item: ItineraryItem;

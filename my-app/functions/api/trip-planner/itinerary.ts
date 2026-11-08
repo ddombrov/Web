@@ -1,21 +1,21 @@
 /// <reference types="@cloudflare/workers-types" />
 import { installEnv, type Env } from './_env';
-import type { ItineraryItem, ItineraryRequest } from '../../../src/trip-planner/lib/types';
-import { buildDayList, addDays, MAX_TRIP_DAYS } from '../../../src/trip-planner/lib/dates';
-import { searchRedditMultiSource, isRedditConfigured } from '../../../src/trip-planner/lib/reddit';
-import { clusterByDay } from '../../../src/trip-planner/lib/clusterByDay';
-import { findReviewHighlights } from '../../../src/trip-planner/lib/reviewHighlights';
-import { repairItinerary } from '../../../src/trip-planner/lib/repairItinerary';
-import { searchEvents, isTicketmasterConfigured } from '../../../src/trip-planner/lib/ticketmaster';
-import { mergePlaces } from '../../../src/trip-planner/lib/mergePlaces';
-import { findOpeningHours } from '../../../src/trip-planner/lib/openingHours';
-import { trimPlacesForPrompt } from '../../../src/trip-planner/lib/trimPlacesForPrompt';
-import { annotateReviewEvidence } from '../../../src/trip-planner/lib/reviewEvidence';
-import { generateItinerary } from '../../../src/trip-planner/lib/generateItinerary';
-import type { RawPlace } from '../../../src/trip-planner/lib/rawPlace';
-import { checkRateLimit, clientIp, tooManyRequests, TEN_MINUTES_MS } from '../../../src/trip-planner/lib/rateLimit';
-import { FULL_BUILDS_PER_WINDOW } from '../../../src/trip-planner/lib/limits';
-import { isCityPoolConfigured, cityKeyFor, getCityPoolCandidates, contributePlaces } from '../../../src/trip-planner/lib/cityPool';
+import type { ItineraryItem, ItineraryRequest } from '../../../src/app/trip-planner/lib/types';
+import { buildDayList, addDays, MAX_TRIP_DAYS } from '../../../src/app/trip-planner/lib/dates';
+import { searchRedditMultiSource, isRedditConfigured } from '../../../src/app/trip-planner/lib/reddit';
+import { clusterByDay } from '../../../src/app/trip-planner/lib/clusterByDay';
+import { findReviewHighlights } from '../../../src/app/trip-planner/lib/reviewHighlights';
+import { repairItinerary } from '../../../src/app/trip-planner/lib/repairItinerary';
+import { searchEvents, isTicketmasterConfigured } from '../../../src/app/trip-planner/lib/ticketmaster';
+import { mergePlaces } from '../../../src/app/trip-planner/lib/mergePlaces';
+import { findOpeningHours } from '../../../src/app/trip-planner/lib/openingHours';
+import { trimPlacesForPrompt } from '../../../src/app/trip-planner/lib/trimPlacesForPrompt';
+import { annotateReviewEvidence } from '../../../src/app/trip-planner/lib/reviewEvidence';
+import { generateItinerary } from '../../../src/app/trip-planner/lib/generateItinerary';
+import type { RawPlace } from '../../../src/app/trip-planner/lib/rawPlace';
+import { checkRateLimit, clientIp, tooManyRequests, TEN_MINUTES_MS } from '../../../src/app/trip-planner/lib/rateLimit';
+import { FULL_BUILDS_PER_WINDOW } from '../../../src/app/trip-planner/lib/limits';
+import { isCityPoolConfigured, cityKeyFor, getCityPoolCandidates, contributePlaces } from '../../../src/app/trip-planner/lib/cityPool';
 
 const MAX_SPOTS = 50;
 const SCOPED_REGENS_PER_WINDOW = 20;

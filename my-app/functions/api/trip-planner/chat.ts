@@ -1,10 +1,10 @@
 /// <reference types="@cloudflare/workers-types" />
 import { installEnv, type Env } from './_env';
-import { enforceRateLimit } from '../../../src/trip-planner/lib/rateLimit';
-import { interpretChatMessage } from '../../../src/trip-planner/lib/chatActions';
-import { pickOpeningHours } from '../../../src/trip-planner/lib/openingHours';
-import type { RawPlace } from '../../../src/trip-planner/lib/rawPlace';
-import type { ChatOp, ItineraryItem } from '../../../src/trip-planner/lib/types';
+import { enforceRateLimit } from '../../../src/app/trip-planner/lib/rateLimit';
+import { interpretChatMessage } from '../../../src/app/trip-planner/lib/chatActions';
+import { pickOpeningHours } from '../../../src/app/trip-planner/lib/openingHours';
+import type { RawPlace } from '../../../src/app/trip-planner/lib/rawPlace';
+import type { ChatOp, ItineraryItem } from '../../../src/app/trip-planner/lib/types';
 
 type SearchPlace = RawPlace & { types?: string[] };
 

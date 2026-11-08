@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import type { SourceWeights, SourceConfig } from '@/trip-planner/lib/types';
+import type { SourceWeights, SourceConfig } from '@/app/trip-planner/lib/types';
 
 interface Props {
   value: SourceWeights;

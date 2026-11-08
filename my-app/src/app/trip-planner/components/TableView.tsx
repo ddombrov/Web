@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
-import type { ItineraryItem } from '@/trip-planner/lib/types';
-import { sourcesForItem } from '@/trip-planner/lib/sources';
-import { hoursNoteForItem } from '@/trip-planner/lib/openingHours';
-import { getSpotEmoji } from '@/trip-planner/lib/spotEmoji';
-import { dayColor } from '@/trip-planner/lib/dayColor';
+import type { ItineraryItem } from '@/app/trip-planner/lib/types';
+import { sourcesForItem } from '@/app/trip-planner/lib/sources';
+import { hoursNoteForItem } from '@/app/trip-planner/lib/openingHours';
+import { getSpotEmoji } from '@/app/trip-planner/lib/spotEmoji';
+import { dayColor } from '@/app/trip-planner/lib/dayColor';
 import {
   startItemDrag,
   isItineraryDrag,
@@ -13,7 +13,7 @@ import {
   dropPosition,
   type MoveTarget,
   type DropPosition,
-} from '@/trip-planner/lib/dragDrop';
+} from '@/app/trip-planner/lib/dragDrop';
 
 const SLOT_ORDER: Record<ItineraryItem['slot'], number> = { Morning: 0, Afternoon: 1, Evening: 2 };
 

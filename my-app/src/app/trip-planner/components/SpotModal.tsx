@@ -1,8 +1,8 @@
 'use client';
 
 import { X } from 'lucide-react';
-import type { ItineraryItem } from '@/trip-planner/lib/types';
-import { SpotDetail } from '@/trip-planner/components/SpotDetail';
+import type { ItineraryItem } from '@/app/trip-planner/lib/types';
+import { SpotDetail } from '@/app/trip-planner/components/SpotDetail';
 
 interface Props {
   item: ItineraryItem | null;

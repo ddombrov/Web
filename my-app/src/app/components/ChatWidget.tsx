@@ -248,12 +248,12 @@ export default function ChatWidget() {
         sx={{
           width: 56,
           height: 56,
-          bgcolor: "secondary.main",
+          bgcolor: "#FFD749",
           color: "#111",
           boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
           ml: "auto",
           display: "flex",
-          "&:hover": { bgcolor: "secondary.main", opacity: 0.9 },
+          "&:hover": { bgcolor: "#FFD749", opacity: 0.9 },
         }}
       >
         {open ? <CloseIcon /> : <ChatBubbleOutlineIcon />}

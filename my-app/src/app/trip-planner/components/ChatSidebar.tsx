@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { MessageCircle, X, Send } from 'lucide-react';
-import type { ChatOp, ItineraryItem } from '@/trip-planner/lib/types';
+import type { ChatOp, ItineraryItem } from '@/app/trip-planner/lib/types';
 
 interface ChatMessage {
   role: 'user' | 'assistant';

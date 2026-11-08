@@ -1,7 +1,7 @@
 /// <reference types="@cloudflare/workers-types" />
 import { installEnv, type Env } from './_env';
-import { enforceRateLimit } from '../../../src/trip-planner/lib/rateLimit';
-import { decodePolyline } from '../../../src/trip-planner/lib/polyline';
+import { enforceRateLimit } from '../../../src/app/trip-planner/lib/rateLimit';
+import { decodePolyline } from '../../../src/app/trip-planner/lib/polyline';
 
 interface LatLng {
   lat: number;

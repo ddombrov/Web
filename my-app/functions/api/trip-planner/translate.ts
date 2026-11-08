@@ -1,7 +1,7 @@
 /// <reference types="@cloudflare/workers-types" />
 import { installEnv, type Env } from './_env';
-import { translateTexts } from '../../../src/trip-planner/lib/translate';
-import { enforceRateLimit } from '../../../src/trip-planner/lib/rateLimit';
+import { translateTexts } from '../../../src/app/trip-planner/lib/translate';
+import { enforceRateLimit } from '../../../src/app/trip-planner/lib/rateLimit';
 
 const MAX_TEXTS_PER_REQUEST = 200;
 

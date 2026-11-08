@@ -2,9 +2,9 @@
 
 import { useState, type ReactNode } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import type { ItineraryItem } from '@/trip-planner/lib/types';
-import { getSpotEmoji } from '@/trip-planner/lib/spotEmoji';
-import { buildCalendarWeeks, buildTripDayRow, buildMonthWeeks, todayStr, toDateStr, type CalendarCell } from '@/trip-planner/lib/dates';
+import type { ItineraryItem } from '@/app/trip-planner/lib/types';
+import { getSpotEmoji } from '@/app/trip-planner/lib/spotEmoji';
+import { buildCalendarWeeks, buildTripDayRow, buildMonthWeeks, todayStr, toDateStr, type CalendarCell } from '@/app/trip-planner/lib/dates';
 import {
   startItemDrag,
   isItineraryDrag,
@@ -12,7 +12,7 @@ import {
   dropPosition,
   type MoveTarget,
   type DropPosition,
-} from '@/trip-planner/lib/dragDrop';
+} from '@/app/trip-planner/lib/dragDrop';
 
 const SLOT_ORDER: Record<ItineraryItem['slot'], number> = { Morning: 0, Afternoon: 1, Evening: 2 };
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

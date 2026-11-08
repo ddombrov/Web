@@ -22,43 +22,43 @@ import {
   Dice5,
 } from 'lucide-react';
 import './tailwind.css';
-import { addDays, daysBetween, todayStr, MAX_TRIP_DAYS } from '@/trip-planner/lib/dates';
-import { CategoryPreferenceGroup, type CategorySelection } from '@/trip-planner/components/CategoryPreferenceGroup';
-import { SingleChoiceGroup } from '@/trip-planner/components/SingleChoiceGroup';
-import { PreferenceTagInput } from '@/trip-planner/components/PreferenceTagInput';
-import { PerDayCountsEditor } from '@/trip-planner/components/PerDayCountsEditor';
-import { SourceWeightSliders } from '@/trip-planner/components/SourceWeightSliders';
-import { RoutePolyline } from '@/trip-planner/components/RoutePolyline';
-import { ChatSidebar } from '@/trip-planner/components/ChatSidebar';
-import { CalendarView, type CalendarSubView } from '@/trip-planner/components/CalendarView';
-import { AddPlaceMenu } from '@/trip-planner/components/AddPlaceMenu';
-import { OptionStepper } from '@/trip-planner/components/OptionStepper';
-import { MovePanel } from '@/trip-planner/components/MovePanel';
-import { OpenInGoogleMaps } from '@/trip-planner/components/OpenInGoogleMaps';
-import { TableView } from '@/trip-planner/components/TableView';
-import { SpotDetail } from '@/trip-planner/components/SpotDetail';
-import { SpotModal } from '@/trip-planner/components/SpotModal';
-import { AddPlaceModal } from '@/trip-planner/components/AddPlaceModal';
-import { ReverseGeocoder, type ReverseGeocodeResult } from '@/trip-planner/components/ReverseGeocoder';
-import { DestinationAutocomplete } from '@/trip-planner/components/DestinationAutocomplete';
-import { ImportModal } from '@/trip-planner/components/ImportModal';
-import { sourcesForItem } from '@/trip-planner/lib/sources';
-import { getSpotEmoji } from '@/trip-planner/lib/spotEmoji';
-import { exportMapsCsv } from '@/trip-planner/lib/exportMapsCsv';
-import { exportIcal } from '@/trip-planner/lib/exportIcal';
-import { applyTranslation } from '@/trip-planner/lib/domTranslate';
+import { addDays, daysBetween, todayStr, MAX_TRIP_DAYS } from '@/app/trip-planner/lib/dates';
+import { CategoryPreferenceGroup, type CategorySelection } from '@/app/trip-planner/components/CategoryPreferenceGroup';
+import { SingleChoiceGroup } from '@/app/trip-planner/components/SingleChoiceGroup';
+import { PreferenceTagInput } from '@/app/trip-planner/components/PreferenceTagInput';
+import { PerDayCountsEditor } from '@/app/trip-planner/components/PerDayCountsEditor';
+import { SourceWeightSliders } from '@/app/trip-planner/components/SourceWeightSliders';
+import { RoutePolyline } from '@/app/trip-planner/components/RoutePolyline';
+import { ChatSidebar } from '@/app/trip-planner/components/ChatSidebar';
+import { CalendarView, type CalendarSubView } from '@/app/trip-planner/components/CalendarView';
+import { AddPlaceMenu } from '@/app/trip-planner/components/AddPlaceMenu';
+import { OptionStepper } from '@/app/trip-planner/components/OptionStepper';
+import { MovePanel } from '@/app/trip-planner/components/MovePanel';
+import { OpenInGoogleMaps } from '@/app/trip-planner/components/OpenInGoogleMaps';
+import { TableView } from '@/app/trip-planner/components/TableView';
+import { SpotDetail } from '@/app/trip-planner/components/SpotDetail';
+import { SpotModal } from '@/app/trip-planner/components/SpotModal';
+import { AddPlaceModal } from '@/app/trip-planner/components/AddPlaceModal';
+import { ReverseGeocoder, type ReverseGeocodeResult } from '@/app/trip-planner/components/ReverseGeocoder';
+import { DestinationAutocomplete } from '@/app/trip-planner/components/DestinationAutocomplete';
+import { ImportModal } from '@/app/trip-planner/components/ImportModal';
+import { sourcesForItem } from '@/app/trip-planner/lib/sources';
+import { getSpotEmoji } from '@/app/trip-planner/lib/spotEmoji';
+import { exportMapsCsv } from '@/app/trip-planner/lib/exportMapsCsv';
+import { exportIcal } from '@/app/trip-planner/lib/exportIcal';
+import { applyTranslation } from '@/app/trip-planner/lib/domTranslate';
 import {
   encodeTrip,
   decodeTrip,
   buildShareHash,
   parseShareHash,
   type ShareOptions,
-} from '@/trip-planner/lib/shareUrl';
-import { useDayRoutes } from '@/trip-planner/lib/useDayRoutes';
-import { dayColor } from '@/trip-planner/lib/dayColor';
-import { checkBuildLimit, recordBuild, refundBuild, buildLimitMessage } from '@/trip-planner/lib/clientRateLimit';
-import { formatDuration, formatDistance, googleMapsDayUrl, type TravelMode } from '@/trip-planner/lib/travel';
-import { hoursNoteForItem } from '@/trip-planner/lib/openingHours';
+} from '@/app/trip-planner/lib/shareUrl';
+import { useDayRoutes } from '@/app/trip-planner/lib/useDayRoutes';
+import { dayColor } from '@/app/trip-planner/lib/dayColor';
+import { checkBuildLimit, recordBuild, refundBuild, buildLimitMessage } from '@/app/trip-planner/lib/clientRateLimit';
+import { formatDuration, formatDistance, googleMapsDayUrl, type TravelMode } from '@/app/trip-planner/lib/travel';
+import { hoursNoteForItem } from '@/app/trip-planner/lib/openingHours';
 import {
   startItemDrag,
   isItineraryDrag,
@@ -67,7 +67,7 @@ import {
   moveItem,
   type MoveTarget,
   type DropPosition,
-} from '@/trip-planner/lib/dragDrop';
+} from '@/app/trip-planner/lib/dragDrop';
 import type {
   ChatOp,
   ItineraryItem,
@@ -80,7 +80,7 @@ import type {
   Transportation,
   SourceWeights,
   SourceConfig,
-} from '@/trip-planner/lib/types';
+} from '@/app/trip-planner/lib/types';
 
 const MAX_SPOTS = 50;
 const DEFAULT_CENTER = { lat: 20, lng: 0 };

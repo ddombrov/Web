@@ -1,7 +1,7 @@
 /// <reference types="@cloudflare/workers-types" />
 import { installEnv, type Env } from "./_env";
-import { isRedditConfigured } from "../../../src/trip-planner/lib/reddit";
-import { isTicketmasterConfigured } from "../../../src/trip-planner/lib/ticketmaster";
+import { isRedditConfigured } from "../../../src/app/trip-planner/lib/reddit";
+import { isTicketmasterConfigured } from "../../../src/app/trip-planner/lib/ticketmaster";
 
 // The Maps JavaScript key is public by design (restricted by referrer in
 // Google Cloud), but it's served at runtime from the Pages environment rather

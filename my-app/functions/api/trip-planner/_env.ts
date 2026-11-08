@@ -10,7 +10,7 @@ export interface Env {
   SUPABASE_SERVICE_ROLE_KEY?: string;
 }
 
-// The planner's server code (src/trip-planner/lib) was written against
+// The planner's server code (src/app/trip-planner/lib) was written against
 // process.env, and a Pages Function only receives its secrets as the `env`
 // argument. Copying them across per request keeps that code unchanged and
 // works whether or not the project has Node compatibility turned on.

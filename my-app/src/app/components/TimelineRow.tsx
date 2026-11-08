@@ -61,7 +61,7 @@ export function TimelineDot({
       />
       {!isLast && (
         <Box sx={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-          <Box sx={{ flex: 1, width: "2px", bgcolor: "rgba(255,255,255,0.18)", mt: 1 }} />
+          <Box sx={{ flex: 1, width: "2px", bgcolor: "#2391FF", mt: 1 }} />
           {endDate && (
             <Typography variant="caption" sx={{ ...dateSx, mt: 1, color: "rgba(255,255,255,0.45)" }}>
               {endDate}
@@ -88,7 +88,7 @@ export function YearMarker({ year }: { year: string }) {
       }}
     >
       <Box sx={{ gridColumn: { xs: "1", md: "2" }, display: "flex", flexDirection: "column", alignItems: "center" }}>
-        <Box sx={{ width: "2px", height: 24, bgcolor: "rgba(255,255,255,0.18)" }} />
+        <Box sx={{ width: "2px", height: 24, bgcolor: "#2391FF" }} />
         <Typography
           sx={{
             fontWeight: 800,
@@ -101,7 +101,7 @@ export function YearMarker({ year }: { year: string }) {
         >
           {year}
         </Typography>
-        <Box sx={{ flex: 1, width: "2px", bgcolor: "rgba(255,255,255,0.18)", minHeight: 24 }} />
+        <Box sx={{ flex: 1, width: "2px", bgcolor: "#2391FF", minHeight: 24 }} />
       </Box>
     </Box>
   );

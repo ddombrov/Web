@@ -1808,8 +1808,8 @@ export default function PageContent() {
                 Built a web version of the two-player board game with the
                 Counterfeiters expansion: a deterministic rules engine shared
                 by the browser and a Cloudflare Worker, so online games are
-                validated server-side, plus a computer opponent, quick match,
-                animations, and two art styles.
+                validated server-side, plus a computer opponent, quick match, and
+                animations.
               </Typography>
             </TimelineEntry>
             </CollapsibleYear>

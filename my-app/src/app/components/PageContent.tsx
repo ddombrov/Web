@@ -1459,7 +1459,8 @@ export default function PageContent() {
               endDate="Apr 2024"
               hideStartDate
               githubUrl="https://github.com/ddombrov/Billards-Game"
-              skills={["C", "Python", "JavaScript", "jQuery", "SQL", "HTML", "CSS"]}
+              tryUrl="/billiards"
+              skills={["C", "Python", "JavaScript", "jQuery", "SQL", "HTML", "CSS", "Cloudflare Workers", "Cloudflare D1"]}
               aside={
                 <Box sx={{ borderRadius: 2, overflow: "hidden", filter: dropShadow, display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "2px", p: "2px", bgcolor: "#fff", maxWidth: 220, mx: { xs: "auto", md: 0 } }}>
                   {billiardsTableSrcs.map((src) => (
@@ -1471,7 +1472,9 @@ export default function PageContent() {
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
                 Programmed a C physics library to simulate billiards ball
                 collisions, then integrated it with a Python-based web server
-                to dynamically generate SVG images onto an HTML website.
+                to dynamically generate SVG images onto an HTML website. It is
+                now a playable two-player 8-ball game: the same C engine runs in
+                the browser as WebAssembly, and games are saved in Cloudflare D1.
               </Typography>
             </TimelineEntry>
 

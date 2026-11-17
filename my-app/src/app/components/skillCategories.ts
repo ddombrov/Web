@@ -14,7 +14,7 @@ const byCategory: string[][] = [
   [
     "Firebase", "Firestore", "Supabase", "Postgres", "Hasura/GraphQL", "AWS Lambda", "Terraform",
     "Adyen", "Plaid", "OpenAI", "ElevenLabs", "Gemini", "Google Maps", "Google Places",
-    "Google OAuth", "Microsoft OAuth", "Reddit", "Ticketmaster", "CRON", "UML", "Active Directory",
+    "Vite", "Cloudflare Workers", "Cloudflare D1", "Google OAuth", "Microsoft OAuth", "Reddit", "Ticketmaster", "CRON", "UML", "Active Directory",
   ],
   [
     "Time Management", "Public Speaking", "Leadership", "Budgeting", "Event Planning", "Teamwork",

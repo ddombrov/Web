@@ -3,7 +3,7 @@ import {
   SiPython, SiJavascript, SiOpenjdk, SiDart, SiR, SiHtml5, SiCss,
   SiReact, SiTypescript, SiNextdotjs, SiDjango, SiFastapi, SiSpringboot, SiFlutter,
   SiFlask, SiTerraform, SiHasura, SiDocker, SiFastify, SiGit,
-  SiPostgresql, SiFirebase, SiSupabase, SiPandas,
+  SiPostgresql, SiFirebase, SiSupabase, SiPandas, SiVite, SiCloudflare,
 } from "react-icons/si";
 import { FaAws } from "react-icons/fa";
 
@@ -34,5 +34,8 @@ export const skillIcons: Record<string, IconType> = {
   PostgreSQL: SiPostgresql,
   Firebase: SiFirebase,
   Supabase: SiSupabase,
+  Vite: SiVite,
+  "Cloudflare Workers": SiCloudflare,
+  "Cloudflare D1": SiCloudflare,
   Pandas: SiPandas,
 };

@@ -501,6 +501,9 @@ function TimelineEntry({
             : undefined
         }
         sx={{
+          // Above the sea life in the Experience section, so a big fish passes behind the text instead of over it.
+          position: "relative",
+          zIndex: 2,
           bgcolor: "rgba(255,255,255,0.045)",
           border: "1px solid #fff",
           borderRadius: 3,

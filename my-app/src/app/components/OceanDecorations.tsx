@@ -128,28 +128,66 @@ function BubbleBurst({ originSide, originOffset }: { originSide: "left" | "right
 // The sea life artwork in public/sea, by number. `face` is the way the head points, so a creature
 // swimming the other way is mirrored instead of swimming backwards.
 type Face = "left" | "right";
-const SWIMMERS: { n: number; face: Face; size: number }[] = [
-  { n: 1, face: "left", size: 52 }, { n: 3, face: "left", size: 50 }, { n: 4, face: "left", size: 84 },
-  { n: 6, face: "left", size: 44 }, { n: 7, face: "left", size: 46 }, { n: 10, face: "left", size: 86 },
-  { n: 11, face: "right", size: 50 }, { n: 12, face: "left", size: 72 }, { n: 14, face: "right", size: 70 },
-  { n: 17, face: "right", size: 58 }, { n: 19, face: "right", size: 52 }, { n: 21, face: "left", size: 38 },
-  { n: 22, face: "left", size: 48 }, { n: 24, face: "left", size: 56 }, { n: 25, face: "left", size: 46 },
-  { n: 26, face: "left", size: 58 }, { n: 27, face: "right", size: 60 }, { n: 28, face: "left", size: 88 },
-  { n: 29, face: "left", size: 84 }, { n: 30, face: "right", size: 50 }, { n: 31, face: "right", size: 58 },
-  { n: 33, face: "left", size: 46 }, { n: 34, face: "left", size: 66 }, { n: 35, face: "left", size: 48 },
-  { n: 37, face: "left", size: 44 }, { n: 40, face: "left", size: 40 }, { n: 41, face: "left", size: 50 },
-  { n: 43, face: "left", size: 54 }, { n: 44, face: "right", size: 50 }, { n: 45, face: "left", size: 84 },
-  { n: 48, face: "left", size: 96 }, { n: 50, face: "left", size: 58 }, { n: 51, face: "left", size: 48 },
-  { n: 53, face: "left", size: 52 }, { n: 54, face: "left", size: 56 }, { n: 55, face: "left", size: 52 },
-  { n: 56, face: "left", size: 50 }, { n: 57, face: "left", size: 40 }, { n: 59, face: "left", size: 50 },
-  { n: 61, face: "left", size: 92 }, { n: 62, face: "left", size: 80 }, { n: 63, face: "left", size: 46 },
-  { n: 64, face: "left", size: 86 }, { n: 66, face: "left", size: 70 }, { n: 67, face: "left", size: 36 },
-  { n: 68, face: "left", size: 58 }, { n: 69, face: "left", size: 50 }, { n: 70, face: "left", size: 46 },
-  { n: 71, face: "left", size: 70 }, { n: 73, face: "left", size: 48 }, { n: 75, face: "left", size: 50 },
+// Reef and freshwater fish swim near the top, sharks, rays and big fish through the middle, and deep-sea
+// fish along the bottom. The numbers are the band of the section's height, in percent, each depth uses.
+type Depth = "surface" | "mid" | "deep";
+const DEPTH_BANDS: Record<Depth, [number, number]> = { surface: [3, 32], mid: [30, 72], deep: [72, 97] };
+const SWIMMERS: { n: number; face: Face; size: number; depth: Depth }[] = [
+  { n: 1, face: "left", size: 52, depth: "surface" },
+  { n: 3, face: "left", size: 50, depth: "surface" },
+  { n: 4, face: "left", size: 168, depth: "mid" },
+  { n: 6, face: "left", size: 44, depth: "surface" },
+  { n: 7, face: "left", size: 46, depth: "surface" },
+  { n: 10, face: "left", size: 172, depth: "mid" },
+  { n: 11, face: "right", size: 50, depth: "surface" },
+  { n: 12, face: "left", size: 144, depth: "mid" },
+  { n: 14, face: "right", size: 70, depth: "mid" },
+  { n: 17, face: "right", size: 58, depth: "mid" },
+  { n: 19, face: "right", size: 52, depth: "mid" },
+  { n: 21, face: "left", size: 38, depth: "surface" },
+  { n: 22, face: "left", size: 48, depth: "surface" },
+  { n: 24, face: "left", size: 56, depth: "surface" },
+  { n: 25, face: "left", size: 46, depth: "deep" },
+  { n: 26, face: "left", size: 58, depth: "deep" },
+  { n: 27, face: "right", size: 60, depth: "mid" },
+  { n: 28, face: "left", size: 176, depth: "mid" },
+  { n: 29, face: "left", size: 168, depth: "mid" },
+  { n: 30, face: "right", size: 50, depth: "surface" },
+  { n: 31, face: "right", size: 58, depth: "mid" },
+  { n: 33, face: "left", size: 46, depth: "surface" },
+  { n: 34, face: "left", size: 66, depth: "mid" },
+  { n: 35, face: "left", size: 48, depth: "surface" },
+  { n: 37, face: "left", size: 44, depth: "surface" },
+  { n: 40, face: "left", size: 40, depth: "surface" },
+  { n: 41, face: "left", size: 50, depth: "surface" },
+  { n: 43, face: "left", size: 54, depth: "surface" },
+  { n: 44, face: "right", size: 50, depth: "surface" },
+  { n: 45, face: "left", size: 168, depth: "mid" },
+  { n: 48, face: "left", size: 150, depth: "mid" },
+  { n: 50, face: "left", size: 58, depth: "deep" },
+  { n: 51, face: "left", size: 48, depth: "surface" },
+  { n: 53, face: "left", size: 52, depth: "mid" },
+  { n: 54, face: "left", size: 56, depth: "deep" },
+  { n: 56, face: "left", size: 50, depth: "surface" },
+  { n: 57, face: "left", size: 40, depth: "surface" },
+  { n: 59, face: "left", size: 50, depth: "mid" },
+  { n: 61, face: "left", size: 184, depth: "mid" },
+  { n: 62, face: "left", size: 160, depth: "mid" },
+  { n: 63, face: "left", size: 46, depth: "surface" },
+  { n: 64, face: "left", size: 172, depth: "mid" },
+  { n: 66, face: "left", size: 140, depth: "deep" },
+  { n: 67, face: "left", size: 36, depth: "surface" },
+  { n: 68, face: "left", size: 58, depth: "deep" },
+  { n: 69, face: "left", size: 50, depth: "surface" },
+  { n: 70, face: "left", size: 46, depth: "surface" },
+  { n: 71, face: "left", size: 70, depth: "mid" },
+  { n: 73, face: "left", size: 48, depth: "deep" },
+  { n: 75, face: "left", size: 50, depth: "surface" },
 ];
-// Jellyfish, octopus, seahorses and the sea dragon bob in place instead of swimming across.
+// Animals without fins to swim with (jellyfish, octopus, cuttlefish, seahorses, the sea dragon) rest
+// near the edges and bob in place instead of crossing the page.
 const DRIFTERS: { n: number; size: number }[] = [
-  { n: 0, size: 64 }, { n: 2, size: 60 }, { n: 8, size: 48 }, { n: 20, size: 50 }, { n: 47, size: 62 }, { n: 49, size: 50 }, { n: 52, size: 58 },
+  { n: 0, size: 64 }, { n: 55, size: 56 }, { n: 2, size: 60 }, { n: 8, size: 48 }, { n: 20, size: 50 }, { n: 47, size: 62 }, { n: 49, size: 50 }, { n: 52, size: 58 },
 ];
 // Crabs, lobsters, shrimp and isopods sit at the edges and scurry off when clicked.
 const CRAWLERS: { n: number; size: number }[] = [
@@ -174,18 +212,19 @@ function pickSome<T>(list: T[], count: number): T[] {
   return copy.slice(0, count);
 }
 
-type Swimmer = { id: string; n: number; face: Face; size: number; top: number; duration: number; delay: number; reverse: boolean; bob: number };
+type Swimmer = { id: string; n: number; face: Face; size: number; depth: Depth; top: number; tilt: number; duration: number; delay: number; reverse: boolean; bob: number };
 type Placed = { id: string; n: number; size: number; top: number; side: "left" | "right"; edge: number; tilt: number; duration: number; delay: number };
 
 // A fresh mix every visit: some creatures from each group, spread down the section.
 function randomSea() {
   const slots = (count: number, from: number, to: number) =>
     Array.from({ length: count }, (_, i) => from + ((i + 0.2 + Math.random() * 0.6) * (to - from)) / count);
-  const swimTops = pickSome(slots(SWIMMER_COUNT, 3, 97), SWIMMER_COUNT);
   const swimmers: Swimmer[] = pickSome(SWIMMERS, SWIMMER_COUNT).map((s, i) => ({
     ...s,
     id: `s${i}`,
-    top: swimTops[i],
+    top: DEPTH_BANDS[s.depth][0] + Math.random() * (DEPTH_BANDS[s.depth][1] - DEPTH_BANDS[s.depth][0]),
+    // Mostly level, with a slight tilt of up to 5 degrees either way.
+    tilt: (Math.random() - 0.5) * 10,
     duration: 38 + Math.random() * 30 + s.size * 0.15,
     delay: -Math.random() * 60,
     reverse: Math.random() < 0.5,
@@ -421,7 +460,7 @@ function SwimmingCreature({ f }: { f: Swimmer }) {
         pointerEvents: "auto",
         zIndex: 1,
         filter: "drop-shadow(0 3px 8px rgba(0,0,0,0.35))",
-        transform: mirror ? "scaleX(-1)" : "none",
+        transform: `${mirror ? "scaleX(-1) " : ""}rotate(${f.tilt.toFixed(1)}deg)`,
         transition: dashing ? `left ${DASH_TRANSITION_S}s cubic-bezier(0.3,0,0.7,1)` : "none",
         animation: dashing ? "none" : `${animName} ${f.duration.toFixed(1)}s ease-in-out ${f.delay.toFixed(1)}s infinite`,
         [`@keyframes ${animName}`]: {

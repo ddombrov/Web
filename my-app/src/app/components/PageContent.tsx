@@ -1347,6 +1347,7 @@ export default function PageContent() {
               endDate="Apr 2023"
               hideStartDate
               githubUrl="https://github.com/ddombrov/BabyNamesFrequencyProject"
+              tryUrl="/baby-names"
               skills={["Python", "Pandas"]}
               aside={<PhotoFrame src="/babyNames.png" alt="Baby Names Frequency Tracker screenshot" width={520} height={293} />}
             >

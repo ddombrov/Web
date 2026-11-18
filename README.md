@@ -3,6 +3,8 @@
 Personal site: a scrolling "journey" timeline of education, work, and projects, plus a chat widget, a
 voice-calling demo (`/call-me-maybe`), and a trip itinerary planner (`/trip-planner`).
 
+![The home page of danieldombrovsky.com](docs/screenshots/home.jpg)
+
 ## Stack
 
 - Next.js 15 (App Router) with static export (`output: 'export'`), React, Material UI + Emotion
@@ -21,6 +23,9 @@ my-app/
   src/app/trip-planner/   the trip planner: page, plus its components/ and lib/ (lib is also used by its functions)
   functions/api/      Cloudflare Pages Functions
   public/             images, logos, voice samples
+  public/mancala-game/  the Mancala Java game: mancala.jar (built from ddombrov/MancalaAndAyoGame with
+                        javac --release 11, main class ui.MancalaGUI) and play.html, which runs it in the
+                        browser with CheerpJ
 ```
 
 ## Local development

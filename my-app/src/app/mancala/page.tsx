@@ -1,13 +1,13 @@
 "use client";
 
-const GAME_URL = "https://splendor-duel.danieldombrovsky9.workers.dev";
+const GAME_URL = "/mancala-game/play.html";
 
-export default function SplendorDuelPage() {
+export default function MancalaPage() {
   return (
     <iframe
       src={GAME_URL}
-      title="Splendor Duel"
-      allow="fullscreen; clipboard-write"
+      title="Mancala"
+      allow="fullscreen"
       style={{ position: "fixed", top: 64, left: 0, width: "100%", height: "calc(100% - 64px)", border: 0, display: "block" }}
     />
   );

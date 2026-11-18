@@ -1485,6 +1485,7 @@ export default function PageContent() {
               startDate="Feb 2024"
               hideStartDate
               githubUrl="https://github.com/ddombrov/MancalaAndAyoGame"
+              tryUrl="/mancala"
               skills={["Java", "Swing", "JUnit"]}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
@@ -1638,6 +1639,7 @@ export default function PageContent() {
               startDate="Mar 2025"
               endDate="Apr 2025"
               githubUrl="https://github.com/ddombrov/oh_scanada"
+              tryUrl="/barcode-scanner"
               skills={["Flutter", "Dart", "Firestore"]}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
@@ -1801,15 +1803,14 @@ export default function PageContent() {
             <TimelineEntry
               side="left"
               tag="Project"
-              title="Splendor Duel"
+              title="Other Game"
               startDate="Nov 2026"
-              githubUrl="https://github.com/ddombrov/splendor"
-              tryUrl="/splendor-duel"
+              tryUrl="/other-game"
               skills={["React", "Vite", "Tailwind CSS", "Cloudflare Workers", "Cloudflare D1", "JavaScript"]}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
-                Built a web version of the two-player board game with the
-                Counterfeiters expansion: a deterministic rules engine shared
+                Built a web version of a two-player board game: a
+                deterministic rules engine shared
                 by the browser and a Cloudflare Worker, so online games are
                 validated server-side, plus a computer opponent, quick match, and
                 animations.

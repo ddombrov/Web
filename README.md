@@ -1,18 +1,16 @@
 # danieldombrovsky.com
 
-Personal site: a scrolling "journey" timeline of education, work, and projects, plus a chat widget and a
-voice-calling demo (`/call-me-maybe`). Each other project has its own page that embeds it from its own
-address: `/splendor-duel`, `/billiards`, `/mancala`, `/barcode-scanner` and `/trip-planner`.
+Personal site: a scrolling "journey" timeline of education, work, and projects, plus a chat widget. Each
+project has its own page that embeds it from its own address: `/splendor-duel`, `/billiards`, `/mancala`,
+`/barcode-scanner`, `/trip-planner` and `/call-me-maybe`. `/baby-names` offers that app as a download.
 
 ![The home page of danieldombrovsky.com](docs/screenshots/home.jpg)
 
 ## Stack
 
 - Next.js 15 (App Router) with static export (`output: 'export'`), React, Material UI + Emotion
-- Tailwind is used only by the `/call-me-maybe` page
-- Cloudflare Pages Functions (`my-app/functions/api/`) for the server-side pieces: the chat endpoint
-  and the voice-call endpoints (OpenAI, ElevenLabs, Twilio). Usage limits use Workers KV, generated call
-  audio is stored in R2.
+- A Cloudflare Pages Function (`my-app/functions/api/chat.ts`) for the chat widget, with its spending
+  limits in Workers KV.
 
 ## Layout
 
@@ -35,9 +33,8 @@ npm run dev        # site only, http://localhost:3000
 npm run dev:cf     # in a second terminal: Pages Functions on :8788, proxying the dev server
 ```
 
-Secrets for the functions go in `my-app/.dev.vars` (gitignored): `OPENAI_API_KEY`,
-`ELEVEN_LABS_API_KEY`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`. The same names must
-be set as environment variables on the Cloudflare Pages project.
+The chat function's key goes in `my-app/.dev.vars` (gitignored) as `OPENAI_API_KEY`, and is set as a
+secret on the Cloudflare Pages project.
 
 ## Deploying
 

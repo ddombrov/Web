@@ -1,7 +1,8 @@
 # danieldombrovsky.com
 
-Personal site: a scrolling "journey" timeline of education, work, and projects, plus a chat widget, a
-voice-calling demo (`/call-me-maybe`), and a trip itinerary planner (`/trip-planner`).
+Personal site: a scrolling "journey" timeline of education, work, and projects, plus a chat widget and a
+voice-calling demo (`/call-me-maybe`). Each other project has its own page that embeds it from its own
+address: `/splendor-duel`, `/billiards`, `/mancala`, `/barcode-scanner` and `/trip-planner`.
 
 ![The home page of danieldombrovsky.com](docs/screenshots/home.jpg)
 
@@ -10,22 +11,17 @@ voice-calling demo (`/call-me-maybe`), and a trip itinerary planner (`/trip-plan
 - Next.js 15 (App Router) with static export (`output: 'export'`), React, Material UI + Emotion
 - Tailwind is used only by the `/call-me-maybe` page
 - Cloudflare Pages Functions (`my-app/functions/api/`) for the server-side pieces: the chat endpoint
-  the voice-call endpoints (OpenAI, ElevenLabs, Twilio), and the trip planner's endpoints
-  (`functions/api/trip-planner/`: Google Places, Geocoding and Routes, Gemini, OpenAI, Reddit, Ticketmaster,
-  and a Supabase-backed shared pool of real places per city — optional, see below).
-  Usage limits use Workers KV, generated call audio is stored in R2.
+  and the voice-call endpoints (OpenAI, ElevenLabs, Twilio). Usage limits use Workers KV, generated call
+  audio is stored in R2.
 
 ## Layout
 
 ```
 my-app/
   src/app/            pages and components (components/PageContent.tsx holds the timeline content)
-  src/app/trip-planner/   the trip planner: page, plus its components/ and lib/ (lib is also used by its functions)
   functions/api/      Cloudflare Pages Functions
   public/             images, logos, voice samples
-  public/mancala-game/  the Mancala Java game: mancala.jar (built from ddombrov/MancalaAndAyoGame with
-                        javac --release 11, main class ui.MancalaGUI) and play.html, which runs it in the
-                        browser with CheerpJ
+  public/sea/         the sea life drifting through the Experience section
 ```
 
 ## Local development
@@ -40,18 +36,8 @@ npm run dev:cf     # in a second terminal: Pages Functions on :8788, proxying th
 ```
 
 Secrets for the functions go in `my-app/.dev.vars` (gitignored): `OPENAI_API_KEY`,
-`ELEVEN_LABS_API_KEY`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`. The trip planner
-adds `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, `GOOGLE_PLACES_API_KEY`, `GEMINI_API_KEY`, `REDDIT_CLIENT_ID`,
-`REDDIT_CLIENT_SECRET`, and `TICKETMASTER_API_KEY` (Reddit and Ticketmaster are optional). The same names must
-be set as environment variables on the Cloudflare Pages project. The Maps key is served to the browser at runtime
-by `/api/trip-planner/config` and must be restricted to the site's domains in Google Cloud.
-
-`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (also optional) back a shared pool of real places per
-city — see `src/app/trip-planner/lib/cityPool.ts`. Every generation adds its real places to that city's
-pool, and sharing a trip also adds any custom places, so a popular city accumulates more candidates
-over time on top of each request's own fresh Google search. Generation works exactly the same without
-these set; the pool is a pure bonus, never a dependency. The service role key must never be exposed to
-the browser — it's read only by the Pages Functions, never sent to the client.
+`ELEVEN_LABS_API_KEY`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`. The same names must
+be set as environment variables on the Cloudflare Pages project.
 
 ## Deploying
 

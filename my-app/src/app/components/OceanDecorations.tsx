@@ -125,34 +125,102 @@ function BubbleBurst({ originSide, originOffset }: { originSide: "left" | "right
   );
 }
 
-// A crab you can click: it freezes for a beat (startled), then scurries
-// off past its edge and fades out, reappearing back at its spot a few
-// seconds later. Every timing below is duplicated between the setTimeout
-// schedule and the animation-duration values on purpose — they have to
-// stay in lockstep, there's no single source of truth to derive both from
-// without a lot more machinery for a decorative easter egg.
+// The sea life artwork in public/sea, by number. `face` is the way the head points, so a creature
+// swimming the other way is mirrored instead of swimming backwards.
+type Face = "left" | "right";
+const SWIMMERS: { n: number; face: Face; size: number }[] = [
+  { n: 1, face: "left", size: 52 }, { n: 3, face: "left", size: 50 }, { n: 4, face: "left", size: 84 },
+  { n: 6, face: "left", size: 44 }, { n: 7, face: "left", size: 46 }, { n: 10, face: "left", size: 86 },
+  { n: 11, face: "right", size: 50 }, { n: 12, face: "left", size: 72 }, { n: 14, face: "right", size: 70 },
+  { n: 17, face: "right", size: 58 }, { n: 19, face: "right", size: 52 }, { n: 21, face: "left", size: 38 },
+  { n: 22, face: "left", size: 48 }, { n: 24, face: "left", size: 56 }, { n: 25, face: "left", size: 46 },
+  { n: 26, face: "left", size: 58 }, { n: 27, face: "right", size: 60 }, { n: 28, face: "left", size: 88 },
+  { n: 29, face: "left", size: 84 }, { n: 30, face: "right", size: 50 }, { n: 31, face: "right", size: 58 },
+  { n: 33, face: "left", size: 46 }, { n: 34, face: "left", size: 66 }, { n: 35, face: "left", size: 48 },
+  { n: 37, face: "left", size: 44 }, { n: 40, face: "left", size: 40 }, { n: 41, face: "left", size: 50 },
+  { n: 43, face: "left", size: 54 }, { n: 44, face: "right", size: 50 }, { n: 45, face: "left", size: 84 },
+  { n: 48, face: "left", size: 96 }, { n: 50, face: "left", size: 58 }, { n: 51, face: "left", size: 48 },
+  { n: 53, face: "left", size: 52 }, { n: 54, face: "left", size: 56 }, { n: 55, face: "left", size: 52 },
+  { n: 56, face: "left", size: 50 }, { n: 57, face: "left", size: 40 }, { n: 59, face: "left", size: 50 },
+  { n: 61, face: "left", size: 92 }, { n: 62, face: "left", size: 80 }, { n: 63, face: "left", size: 46 },
+  { n: 64, face: "left", size: 86 }, { n: 66, face: "left", size: 70 }, { n: 67, face: "left", size: 36 },
+  { n: 68, face: "left", size: 58 }, { n: 69, face: "left", size: 50 }, { n: 70, face: "left", size: 46 },
+  { n: 71, face: "left", size: 70 }, { n: 73, face: "left", size: 48 }, { n: 75, face: "left", size: 50 },
+];
+// Jellyfish, octopus, seahorses and the sea dragon bob in place instead of swimming across.
+const DRIFTERS: { n: number; size: number }[] = [
+  { n: 0, size: 64 }, { n: 2, size: 60 }, { n: 8, size: 48 }, { n: 20, size: 50 }, { n: 47, size: 62 }, { n: 49, size: 50 }, { n: 52, size: 58 },
+];
+// Crabs, lobsters, shrimp and isopods sit at the edges and scurry off when clicked.
+const CRAWLERS: { n: number; size: number }[] = [
+  { n: 13, size: 52 }, { n: 15, size: 54 }, { n: 18, size: 56 }, { n: 32, size: 50 }, { n: 38, size: 48 },
+  { n: 39, size: 44 }, { n: 46, size: 52 }, { n: 60, size: 52 }, { n: 65, size: 50 }, { n: 74, size: 48 },
+];
+// Shells and coral decorate the edges.
+const SEABED: { n: number; size: number }[] = [
+  { n: 5, size: 44 }, { n: 9, size: 52 }, { n: 16, size: 40 }, { n: 23, size: 54 }, { n: 36, size: 44 }, { n: 42, size: 48 }, { n: 72, size: 54 },
+];
+const PEARL_SHELL = 58;
+const seaSrc = (n: number) => `/sea/${String(n).padStart(2, "0")}.webp`;
+
+const SWIMMER_COUNT = 24, DRIFTER_COUNT = 5, CRAWLER_COUNT = 6, SEABED_COUNT = 6;
+
+function pickSome<T>(list: T[], count: number): T[] {
+  const copy = [...list];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy.slice(0, count);
+}
+
+type Swimmer = { id: string; n: number; face: Face; size: number; top: number; duration: number; delay: number; reverse: boolean; bob: number };
+type Placed = { id: string; n: number; size: number; top: number; side: "left" | "right"; edge: number; tilt: number; duration: number; delay: number };
+
+// A fresh mix every visit: some creatures from each group, spread down the section.
+function randomSea() {
+  const slots = (count: number, from: number, to: number) =>
+    Array.from({ length: count }, (_, i) => from + ((i + 0.2 + Math.random() * 0.6) * (to - from)) / count);
+  const swimTops = pickSome(slots(SWIMMER_COUNT, 3, 97), SWIMMER_COUNT);
+  const swimmers: Swimmer[] = pickSome(SWIMMERS, SWIMMER_COUNT).map((s, i) => ({
+    ...s,
+    id: `s${i}`,
+    top: swimTops[i],
+    duration: 38 + Math.random() * 30 + s.size * 0.15,
+    delay: -Math.random() * 60,
+    reverse: Math.random() < 0.5,
+    bob: 1.5 + Math.random() * 1.2,
+  }));
+  const edgeItems = (list: { n: number; size: number }[], count: number, from: number, to: number, prefix: string): Placed[] => {
+    const tops = slots(count, from, to);
+    return pickSome(list, count).map((c, i) => ({
+      ...c,
+      id: `${prefix}${i}`,
+      top: tops[i],
+      side: i % 2 === 0 ? "left" : "right",
+      edge: -6 - Math.random() * 6,
+      tilt: (Math.random() - 0.5) * 20,
+      duration: 4 + Math.random() * 3,
+      delay: -Math.random() * 6,
+    }));
+  };
+  return {
+    swimmers,
+    drifters: edgeItems(DRIFTERS, DRIFTER_COUNT, 12, 80, "d").map((d) => ({ ...d, edge: 2 + Math.random() * 4 })),
+    crawlers: edgeItems(CRAWLERS, CRAWLER_COUNT, 20, 85, "c"),
+    seabed: edgeItems(SEABED, SEABED_COUNT, 10, 88, "b"),
+  };
+}
+
+// A crawler you can click: it freezes for a beat (startled), then scurries off past its edge and fades
+// out, reappearing back at its spot a few seconds later. Every timing below is duplicated between the
+// setTimeout schedule and the animation durations on purpose; they have to stay in lockstep.
 const FREEZE_MS = 250;
 const FLEE_MS = 650;
 const HIDDEN_MS = 2200;
 const RETURN_MS = 550;
 
-function Crab({
-  id,
-  top,
-  side,
-  edge,
-  baseTransform,
-  fleeDx,
-  fleeDy,
-}: {
-  id: string;
-  top: string;
-  side: "left" | "right";
-  edge: number;
-  baseTransform: string;
-  fleeDx: number;
-  fleeDy: number;
-}) {
+function Crawler({ c }: { c: Placed }) {
   const [phase, setPhase] = useState<"idle" | "frozen" | "fleeing" | "returning">("idle");
 
   useEffect(() => {
@@ -170,335 +238,153 @@ function Crab({
     }
   }, [phase]);
 
-  const wiggleName = `crabWiggle_${id}`;
-  const startleName = `crabStartle_${id}`;
-  const fleeName = `crabFlee_${id}`;
-  const returnName = `crabReturn_${id}`;
-
+  const base = `${c.side === "left" ? "scaleX(-1) " : ""}rotate(${c.tilt.toFixed(1)}deg)`;
+  // Left-edge crawlers are mirrored, so the same +x step carries every crawler off its own edge.
+  const fleeDx = 70;
+  const names = { wiggle: `crawlWiggle_${c.id}`, startle: `crawlStartle_${c.id}`, flee: `crawlFlee_${c.id}`, back: `crawlReturn_${c.id}` };
   const animation =
-    phase === "idle"
-      ? `${wiggleName} 1.6s ease-in-out infinite`
-      : phase === "frozen"
-      ? `${startleName} ${FREEZE_MS}ms ease-out forwards`
-      : phase === "fleeing"
-      ? `${fleeName} ${FLEE_MS}ms ease-in forwards`
-      : `${returnName} ${RETURN_MS}ms ease-out forwards`;
+    phase === "idle" ? `${names.wiggle} 1.6s ease-in-out infinite`
+    : phase === "frozen" ? `${names.startle} ${FREEZE_MS}ms ease-out forwards`
+    : phase === "fleeing" ? `${names.flee} ${FLEE_MS}ms ease-in forwards`
+    : `${names.back} ${RETURN_MS}ms ease-out forwards`;
 
   return (
     <Box
       onClick={() => phase === "idle" && setPhase("frozen")}
       role="button"
-      aria-label="A crab — click it"
+      aria-label="A sea creature, click it"
       sx={{
         position: "absolute",
-        top,
-        [side]: edge,
-        fontSize: "2.5rem",
-        lineHeight: 1,
+        top: `${c.top}%`,
+        [c.side]: c.edge,
+        width: c.size,
+        height: c.size,
         cursor: "pointer",
         pointerEvents: "auto",
         zIndex: 1,
         filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.4))",
         animation,
-        [`@keyframes ${wiggleName}`]: {
-          "0%, 100%": { transform: `${baseTransform} translate(0, 0)` },
-          "50%": { transform: `${baseTransform} translate(18px, -4px)` },
+        [`@keyframes ${names.wiggle}`]: {
+          "0%, 100%": { transform: `${base} translate(0, 0)` },
+          "50%": { transform: `${base} translate(14px, -3px)` },
         },
-        [`@keyframes ${startleName}`]: {
-          "0%": { transform: `${baseTransform} translate(0, 0) scale(1)` },
-          "100%": { transform: `${baseTransform} translate(0, 0) scale(1.2)` },
+        [`@keyframes ${names.startle}`]: {
+          "0%": { transform: `${base} scale(1)` },
+          "100%": { transform: `${base} scale(1.2)` },
         },
-        [`@keyframes ${fleeName}`]: {
-          "0%": { transform: `${baseTransform} translate(0, 0) scale(1.2)`, opacity: 1 },
-          "100%": { transform: `${baseTransform} translate(${fleeDx}px, ${fleeDy}px) scale(0.7)`, opacity: 0 },
+        [`@keyframes ${names.flee}`]: {
+          "0%": { transform: `${base} translate(0, 0) scale(1.2)`, opacity: 1 },
+          "100%": { transform: `${base} translate(${fleeDx}px, 30px) scale(0.7)`, opacity: 0 },
         },
-        [`@keyframes ${returnName}`]: {
-          "0%": { transform: `${baseTransform} translate(${fleeDx}px, ${fleeDy}px) scale(0.7)`, opacity: 0 },
-          "100%": { transform: `${baseTransform} translate(0, 0) scale(1)`, opacity: 1 },
+        [`@keyframes ${names.back}`]: {
+          "0%": { transform: `${base} translate(${fleeDx}px, 30px) scale(0.7)`, opacity: 0 },
+          "100%": { transform: `${base} translate(0, 0) scale(1)`, opacity: 1 },
         },
         "@media (prefers-reduced-motion: reduce)": { animation: phase === "idle" ? "none" : animation },
       }}
     >
-      🦀
+      <SeaImage n={c.n} size={c.size} />
     </Box>
   );
 }
 
-function TreasureChest() {
-  const [open, setOpen] = useState(false);
+function SeaImage({ n, size }: { n: number; size: number }) {
+  // eslint-disable-next-line @next/next/no-img-element -- decorative, randomly chosen background element; not worth next/image's overhead here
+  return <img src={seaSrc(n)} alt="" width={size} height={size} draggable={false} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />;
+}
 
+// Jellyfish, seahorses and friends bob gently in place.
+function Drifter({ d }: { d: Placed }) {
+  const name = `drift_${d.id}`;
   return (
     <Box
-      onClick={() => setOpen(true)}
+      sx={{
+        position: "absolute",
+        top: `${d.top}%`,
+        [d.side]: `${d.edge}%`,
+        width: d.size,
+        height: d.size,
+        pointerEvents: "none",
+        zIndex: 1,
+        filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.35))",
+        animation: `${name} ${d.duration}s ease-in-out ${d.delay}s infinite`,
+        [`@keyframes ${name}`]: {
+          "0%, 100%": { transform: `translateY(0) rotate(${(d.tilt / 2).toFixed(1)}deg)` },
+          "50%": { transform: `translateY(-18px) rotate(${(-d.tilt / 2).toFixed(1)}deg)` },
+        },
+        "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+      }}
+    >
+      <SeaImage n={d.n} size={d.size} />
+    </Box>
+  );
+}
+
+function SeabedItem({ b }: { b: Placed }) {
+  return (
+    <Box
+      sx={{
+        position: "absolute",
+        top: `${b.top}%`,
+        [b.side]: b.edge,
+        width: b.size,
+        height: b.size,
+        pointerEvents: "none",
+        zIndex: 1,
+        transform: `rotate(${b.tilt.toFixed(1)}deg)`,
+        filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.4))",
+      }}
+    >
+      <SeaImage n={b.n} size={b.size} />
+    </Box>
+  );
+}
+
+// The pearl shell at the bottom of the section: click it and it lets out a burst of bubbles.
+function PearlShell() {
+  const [bursts, setBursts] = useState<number[]>([]);
+  return (
+    <Box
+      onClick={() => setBursts((list) => [...list.slice(-2), Date.now()])}
       role="button"
-      aria-label="A treasure chest — click it"
+      aria-label="A pearl shell, click it"
       sx={{
         position: "absolute",
         top: "92%",
         left: -10,
-        width: 46,
-        height: 40,
-        cursor: open ? "default" : "pointer",
-        pointerEvents: "auto",
-        zIndex: 1,
-        filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.4))",
-        animation: open ? "chestPop 0.4s ease-out" : "none",
-        "@keyframes chestPop": {
-          "0%": { transform: "scale(1)" },
-          "40%": { transform: "scale(1.15)" },
-          "100%": { transform: "scale(1)" },
-        },
-      }}
-    >
-      <Box component="svg" viewBox="0 0 46 40" sx={{ width: "100%", height: "100%", display: "block", overflow: "visible" }}>
-        <rect x="2" y="20" width="42" height="18" rx="3" fill="#7A4A22" stroke="#4E2E14" strokeWidth="1.5" />
-        {open ? (
-          <>
-            <ellipse cx="16" cy="20" rx="5" ry="3" fill="#D9A441" stroke="#4E2E14" strokeWidth="0.75" />
-            <ellipse cx="24" cy="18" rx="5" ry="3" fill="#F0C464" stroke="#4E2E14" strokeWidth="0.75" />
-            <ellipse cx="31" cy="20.5" rx="5" ry="3" fill="#D9A441" stroke="#4E2E14" strokeWidth="0.75" />
-            <path d="M2 20 Q10 2 20 3" fill="#8B5A2B" stroke="#4E2E14" strokeWidth="1.5" strokeLinecap="round" />
-            <path d="M44 20 Q36 2 26 3" fill="#8B5A2B" stroke="#4E2E14" strokeWidth="1.5" strokeLinecap="round" />
-          </>
-        ) : (
-          <path d="M2 20 Q23 4 44 20 L44 24 Q23 12 2 24 Z" fill="#8B5A2B" stroke="#4E2E14" strokeWidth="1.5" />
-        )}
-        <rect x="19" y="18" width="8" height="10" rx="1.5" fill="#D9A441" stroke="#4E2E14" strokeWidth="1" />
-        <circle cx="23" cy="23" r="1.4" fill="#4E2E14" />
-      </Box>
-      {open ? (
-        <>
-          <Box
-            sx={{
-              position: "absolute",
-              top: -10,
-              left: 14,
-              fontSize: "0.9rem",
-              animation: "chestSparkle 2.4s ease-in-out infinite",
-              "@keyframes chestSparkle": {
-                "0%, 100%": { opacity: 0.3, transform: "scale(0.85)" },
-                "50%": { opacity: 1, transform: "scale(1.1)" },
-              },
-              "@media (prefers-reduced-motion: reduce)": { animation: "none" },
-            }}
-          >
-            ✨
-          </Box>
-          <BubbleBurst originSide="left" originOffset={50} />
-        </>
-      ) : (
-        <Box
-          sx={{
-            position: "absolute",
-            top: -10,
-            right: -6,
-            fontSize: "0.9rem",
-            animation: "chestSparkleIdle 2.4s ease-in-out infinite",
-            "@keyframes chestSparkleIdle": {
-              "0%, 100%": { opacity: 0.3, transform: "scale(0.85)" },
-              "50%": { opacity: 1, transform: "scale(1.1)" },
-            },
-            "@media (prefers-reduced-motion: reduce)": { animation: "none" },
-          }}
-        >
-          ✨
-        </Box>
-      )}
-    </Box>
-  );
-}
-
-type Fish = {
-  id: string;
-  top: number;
-  width: number;
-  duration: number;
-  delay: number;
-  reverse: boolean;
-  bodyColor: string;
-  tailColor: string;
-  lure?: boolean;
-  bob: number;
-};
-
-// Three size tiers at three depths — small guppies near the top, mid-size
-// fish through the middle, and anglerfish patrolling the bottom. Hand-built
-// as SVG rather than emoji: no emoji set draws a fish asymmetrically enough
-// that flipping it for the opposite swim direction reads as "turned
-// around" instead of "generic blob facing nowhere in particular" (the
-// shark emoji was the clearest example — near side-on but not enough to
-// read as changing direction when mirrored). This shape faces right by
-// construction (head/eye on the right, tail on the left), so a rightward
-// swim needs no flip and a leftward one just mirrors the whole thing.
-const FISH: Fish[] = [
-  { id: "f1", top: 8, width: 20, duration: 38, delay: -6, reverse: false, bodyColor: "#8FD3E8", tailColor: "#4FA8C9", bob: 2 },
-  { id: "f2", top: 18, width: 17, duration: 44, delay: -22, reverse: true, bodyColor: "#A8E0C9", tailColor: "#5BB894", bob: 2.6 },
-  { id: "f3", top: 45, width: 34, duration: 50, delay: -12, reverse: false, bodyColor: "#FF8A3D", tailColor: "#E85D2B", bob: 1.8 },
-  { id: "f4", top: 58, width: 30, duration: 46, delay: -30, reverse: true, bodyColor: "#FFC24D", tailColor: "#E89A2B", bob: 2.4 },
-  { id: "f5", top: 82, width: 50, duration: 66, delay: -18, reverse: false, bodyColor: "#1B2430", tailColor: "#0D1219", lure: true, bob: 1.6 },
-  { id: "f6", top: 97, width: 44, duration: 60, delay: -42, reverse: true, bodyColor: "#232E3D", tailColor: "#0D1219", lure: true, bob: 2.2 },
-];
-
-// The original emoji fish, kept alongside the hand-built SVG ones above —
-// 🐟/🐠 have enough of a side profile that flipping them for direction
-// reads fine (unlike the shark emoji, which is why the bottom tier stayed
-// SVG-only).
-type EmojiFish = { id: string; top: number; emoji: string; size: string; duration: number; delay: number; reverse: boolean };
-
-const EMOJI_FISH: EmojiFish[] = [
-  { id: "ef1", top: 28, emoji: "🐟", size: "1.2rem", duration: 40, delay: -14, reverse: false },
-  { id: "ef2", top: 65, emoji: "🐠", size: "1.5rem", duration: 48, delay: -26, reverse: true },
-  { id: "ef3", top: 90, emoji: "🐟", size: "1.1rem", duration: 42, delay: -8, reverse: false },
-];
-
-// A fish darts off toward the edge it's already heading when clicked, then
-// resumes its usual cruising loop — the same "startled" idea as the crab,
-// expressed as a burst of speed instead of a flee-and-return. This can't be
-// done by just shrinking the keyframe animation's duration: since the
-// animation keeps running (same name, same delay), the browser recomputes
-// progress as elapsed-real-time / new-duration, which for a much shorter
-// duration jumps to a effectively unrelated point in the 0-100% cycle —
-// reading as "teleports to the edge, then moves fast" instead of "darts
-// away from where it actually was." Instead, on click this captures the
-// fish's real on-screen position, freezes the keyframe animation, and
-// drives a plain CSS transition from that exact captured point out to the
-// edge — which always starts smoothly from wherever the fish really is.
-const DASH_TRANSITION_S = 0.85;
-const DASH_MS = 900;
-
-function SwimmingEmojiFish({ f }: { f: EmojiFish }) {
-  const animName = `emojiFishSwim_${f.id}`;
-  const flip = !f.reverse;
-  const ref = useRef<HTMLDivElement>(null);
-  const [dashing, setDashing] = useState(false);
-  const [dashLeft, setDashLeft] = useState<number | null>(null);
-
-  const handleClick = () => {
-    const el = ref.current;
-    const parent = el?.offsetParent as HTMLElement | null;
-    if (!el || !parent || dashing) return;
-    const elRect = el.getBoundingClientRect();
-    const parentRect = parent.getBoundingClientRect();
-    const fromLeft = elRect.left - parentRect.left;
-    const toLeft = f.reverse ? -150 : parentRect.width + 150;
-
-    setDashing(true);
-    setDashLeft(fromLeft);
-    requestAnimationFrame(() => requestAnimationFrame(() => setDashLeft(toLeft)));
-    setTimeout(() => {
-      setDashing(false);
-      setDashLeft(null);
-    }, DASH_MS);
-  };
-
-  return (
-    <Box
-      ref={ref}
-      onClick={handleClick}
-      role="button"
-      aria-label="A fish — click it"
-      sx={{
-        position: "absolute",
-        top: `${f.top}%`,
-        left: dashing ? dashLeft ?? undefined : undefined,
-        fontSize: f.size,
-        lineHeight: 1,
+        width: 52,
+        height: 52,
         cursor: "pointer",
         pointerEvents: "auto",
         zIndex: 1,
-        filter: "drop-shadow(0 3px 8px rgba(0,0,0,0.35))",
-        transform: flip ? "scaleX(-1)" : "none",
-        transition: dashing ? `left ${DASH_TRANSITION_S}s cubic-bezier(0.3,0,0.7,1)` : "none",
-        animation: dashing ? "none" : `${animName} ${f.duration}s linear ${f.delay}s infinite`,
-        [`@keyframes ${animName}`]: f.reverse
-          ? { "0%": { left: "104%" }, "100%": { left: "-10%" } }
-          : { "0%": { left: "-10%" }, "100%": { left: "104%" } },
-        "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+        filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.4))",
+        "&:active": { transform: "scale(1.12)" },
+        transition: "transform 0.2s ease-out",
       }}
     >
-      {f.emoji}
+      <SeaImage n={PEARL_SHELL} size={52} />
+      {bursts.map((key) => (
+        <BubbleBurst key={key} originSide="left" originOffset={50} />
+      ))}
     </Box>
   );
 }
 
-function FishSVG({ id, bodyColor, tailColor, lure }: { id: string; bodyColor: string; tailColor: string; lure?: boolean }) {
-  const gradId = `fishBodyGrad_${id}`;
-  return (
-    <Box
-      component="svg"
-      viewBox="-6 -16 50 38"
-      sx={{
-        width: "100%",
-        height: "100%",
-        display: "block",
-        overflow: "visible",
-        "& .fishTail": { transformOrigin: "7px 12px", animation: "fishTailFlap 0.7s ease-in-out infinite" },
-        "@keyframes fishTailFlap": {
-          "0%, 100%": { transform: "rotate(-16deg)" },
-          "50%": { transform: "rotate(16deg)" },
-        },
-        "& .lureGlow": { animation: "lureGlowPulse 1.8s ease-in-out infinite" },
-        "@keyframes lureGlowPulse": {
-          "0%, 100%": { opacity: 0.75 },
-          "50%": { opacity: 1 },
-        },
-        "& .lureHalo": { animation: "lureHaloPulse 1.8s ease-in-out infinite" },
-        "@keyframes lureHaloPulse": {
-          "0%, 100%": { opacity: 0.3, r: 4 },
-          "50%": { opacity: 0.6, r: 6 },
-        },
-        "@media (prefers-reduced-motion: reduce)": { "& .fishTail, & .lureGlow, & .lureHalo": { animation: "none" } },
-      }}
-    >
-      <defs>
-        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#fff" stopOpacity="0.4" />
-          <stop offset="45%" stopColor="#fff" stopOpacity="0" />
-          <stop offset="100%" stopColor="#000" stopOpacity="0.28" />
-        </linearGradient>
-      </defs>
+// A creature darts off toward the edge it's already heading when clicked, then resumes its usual
+// cruising loop. Shrinking the keyframe animation's duration would jump it to an unrelated point in the
+// cycle, so instead this captures its real on-screen position, freezes the keyframe animation, and
+// drives a plain CSS transition from that exact point out to the edge.
+const DASH_TRANSITION_S = 0.85;
+const DASH_MS = 900;
 
-      {lure && (
-        <>
-          <circle className="lureHalo" cx="41" cy="-13" r="4" fill="#E8FFA0" />
-          <path d="M30 0 Q37 -8 41 -13" fill="none" stroke={tailColor} strokeWidth="1.2" />
-          <circle className="lureGlow" cx="41" cy="-13" r="2.6" fill="#F2FFC2" />
-          <circle cx="41" cy="-13" r="1.1" fill="#fff" />
-        </>
-      )}
-
-      {/* tail fin, two overlapping lobes for a bit of depth */}
-      <g className="fishTail">
-        <path d="M12 12 L0 3 L0 21 Z" fill={tailColor} />
-        <path d="M11 12 L3 8 L3 16 Z" fill={tailColor} opacity="0.55" />
-      </g>
-
-      {/* dorsal fin */}
-      <path d="M17 4.5 Q21 -7 28 3.5 Q22 2 17 4.5 Z" fill={tailColor} />
-      {/* pectoral fin */}
-      <path d="M25 17 Q29 24 34 19 Q29 17.5 25 17 Z" fill={tailColor} opacity="0.85" />
-
-      {/* body, with a gradient overlay for a rounded, shaded look */}
-      <ellipse cx="24" cy="12" rx="16" ry="8.5" fill={bodyColor} />
-      <ellipse cx="24" cy="12" rx="16" ry="8.5" fill={`url(#${gradId})`} />
-      {/* belly highlight */}
-      <ellipse cx="22" cy="16.5" rx="11" ry="2.6" fill="#fff" opacity="0.16" />
-      {/* gill mark */}
-      <path d="M31 6.5 Q29 12 31 17.5" fill="none" stroke="rgba(0,0,0,0.28)" strokeWidth="1" strokeLinecap="round" />
-
-      <circle cx="35" cy="9" r="1.7" fill="#fff" />
-      <circle cx="35" cy="9" r="0.85" fill="#111" />
-    </Box>
-  );
-}
-
-function SwimmingFish({ f }: { f: Fish }) {
-  const animName = `fishSwim_${f.id}`;
-  const height = f.width * (34 / 50);
-  const bob = f.bob;
+function SwimmingCreature({ f }: { f: Swimmer }) {
+  const animName = `seaSwim_${f.id}`;
   const ref = useRef<HTMLDivElement>(null);
   const [dashing, setDashing] = useState(false);
   const [dashPos, setDashPos] = useState<{ left: number; top: number } | null>(null);
+  // Mirror the picture when it would otherwise swim tail first.
+  const heading: Face = f.reverse ? "left" : "right";
+  const mirror = heading !== f.face;
 
   const handleClick = () => {
     const el = ref.current;
@@ -524,50 +410,42 @@ function SwimmingFish({ f }: { f: Fish }) {
       ref={ref}
       onClick={handleClick}
       role="button"
-      aria-label="A fish — click it"
+      aria-label="A fish, click it"
       sx={{
         position: "absolute",
         top: dashing ? dashPos?.top ?? `${f.top}%` : `${f.top}%`,
         left: dashing ? dashPos?.left ?? undefined : undefined,
-        width: f.width,
-        height,
+        width: f.size,
+        height: f.size,
         cursor: "pointer",
         pointerEvents: "auto",
         zIndex: 1,
         filter: "drop-shadow(0 3px 8px rgba(0,0,0,0.35))",
-        // Base shape faces right; a leftward swim mirrors the whole fish
-        // (tail flap and all) so it visibly turns to face where it's going.
-        transform: f.reverse ? "scaleX(-1)" : "none",
+        transform: mirror ? "scaleX(-1)" : "none",
         transition: dashing ? `left ${DASH_TRANSITION_S}s cubic-bezier(0.3,0,0.7,1)` : "none",
-        animation: dashing ? "none" : `${animName} ${f.duration}s ease-in-out ${f.delay}s infinite`,
-        [`@keyframes ${animName}`]: f.reverse
-          ? {
-              "0%": { left: "104%", top: `${f.top}%` },
-              "25%": { top: `${f.top - bob}%` },
-              "50%": { left: "50%", top: `${f.top + bob}%` },
-              "75%": { top: `${f.top - bob}%` },
-              "100%": { left: "-10%", top: `${f.top}%` },
-            }
-          : {
-              "0%": { left: "-10%", top: `${f.top}%` },
-              "25%": { top: `${f.top - bob}%` },
-              "50%": { left: "50%", top: `${f.top + bob}%` },
-              "75%": { top: `${f.top - bob}%` },
-              "100%": { left: "104%", top: `${f.top}%` },
-            },
+        animation: dashing ? "none" : `${animName} ${f.duration.toFixed(1)}s ease-in-out ${f.delay.toFixed(1)}s infinite`,
+        [`@keyframes ${animName}`]: {
+          "0%": { left: f.reverse ? "104%" : "-10%", top: `${f.top}%` },
+          "25%": { top: `${(f.top - f.bob).toFixed(1)}%` },
+          "50%": { left: "50%", top: `${(f.top + f.bob).toFixed(1)}%` },
+          "75%": { top: `${(f.top - f.bob).toFixed(1)}%` },
+          "100%": { left: f.reverse ? "-10%" : "104%", top: `${f.top}%` },
+        },
         "@media (prefers-reduced-motion: reduce)": { animation: "none" },
       }}
     >
-      <FishSVG id={f.id} bodyColor={f.bodyColor} tailColor={f.tailColor} lure={f.lure} />
+      <SeaImage n={f.n} size={f.size} />
     </Box>
   );
 }
 
 export default function OceanDecorations() {
   const [bubbles, setBubbles] = useState<Bubble[] | null>(null);
+  const [sea, setSea] = useState<ReturnType<typeof randomSea> | null>(null);
 
   useEffect(() => {
     setBubbles(randomBubbles());
+    setSea(randomSea());
   }, []);
 
   return (
@@ -605,25 +483,15 @@ export default function OceanDecorations() {
 
       </Box>
 
-      {/* Fish, crab, and chest render as siblings of the bubble layer
-          above, not nested inside it: that layer's zIndex:-1 establishes
-          its own stacking context, which traps every descendant at "-1"
-          no matter what z-index they're individually given — clicks on
-          them were being swallowed by ordinary (invisible but still
-          hit-testable) layout spacers from the card grid painting above.
-          Living outside that context, a modest positive zIndex here is
-          enough to win hit-testing normally. */}
-      {FISH.map((f) => (
-        <SwimmingFish key={f.id} f={f} />
-      ))}
-      {EMOJI_FISH.map((f) => (
-        <SwimmingEmojiFish key={f.id} f={f} />
-      ))}
-
-      <Crab id="1" top="35%" side="left" edge={-8} baseTransform="scaleX(-1) rotate(-8deg)" fleeDx={-70} fleeDy={30} />
-      <Crab id="2" top="60%" side="right" edge={-8} baseTransform="rotate(10deg)" fleeDx={70} fleeDy={30} />
-
-      <TreasureChest />
+      {/* The sea life renders as siblings of the bubble layer above, not nested inside it: that
+          layer's zIndex:-1 establishes its own stacking context, which traps every descendant at
+          "-1" no matter what z-index they're individually given, so clicks on them were swallowed by
+          invisible layout spacers from the card grid painting above. */}
+      {sea?.swimmers.map((f) => <SwimmingCreature key={f.id} f={f} />)}
+      {sea?.drifters.map((d) => <Drifter key={d.id} d={d} />)}
+      {sea?.seabed.map((b) => <SeabedItem key={b.id} b={b} />)}
+      {sea?.crawlers.map((c) => <Crawler key={c.id} c={c} />)}
+      <PearlShell />
     </>
   );
 }

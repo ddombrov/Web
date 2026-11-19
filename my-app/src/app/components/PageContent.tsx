@@ -42,7 +42,7 @@ function slug(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
-const billiardsTableSrcs = ["/table-0.svg", "/table-1.svg", "/table-2.svg", "/table-3.svg"];
+const billiardsTableSrcs = ["/projects/billiards/table-0.svg", "/projects/billiards/table-1.svg", "/projects/billiards/table-2.svg", "/projects/billiards/table-3.svg"];
 const billiardsTableSet: LightboxImage[] = billiardsTableSrcs.map((src) => ({
   src,
   alt: "Billiards table",
@@ -165,7 +165,9 @@ const cadetGrey = "#91A3B0";
 // (very long) timeline.
 const oceanStart = "#123044";
 const oceanEnd = "#0A1F2E";
-const experienceBg = `linear-gradient(180deg, ${oceanStart} 0%, ${oceanEnd} 100%)`;
+// The ocean overlay (soft light and depth, mostly transparent) is stretched over the whole section on top of
+// the colour gradient, as part of the section's own background, so it stays underneath everything inside it.
+const experienceBg = `url(/backgrounds/ocean-overlay.webp) center top / 100% 100% no-repeat, linear-gradient(180deg, ${oceanStart} 0%, ${oceanEnd} 100%)`;
 // True black — Contact sits directly on this, so the page ends on a
 // genuinely black beat instead of the warm near-black used elsewhere.
 const pitchBlack = "#000000";
@@ -796,7 +798,7 @@ function TermCourseworkEntry({
   if (!term || term.courses.length === 0) return null;
   return (
     <TimelineEntry
-      logo="/university_of_guelph_logo.jpg"
+      logo="/logos/university_of_guelph_logo.jpg"
       logoAlt="University of Guelph logo"
       side={side}
       tag={term.upcoming ? "Upcoming" : "Education"}
@@ -822,7 +824,7 @@ function SocisPresidentEntry() {
   const [expanded, setExpanded] = useState(false);
   return (
     <TimelineEntry
-      logo="/socisLogo.png"
+      logo="/logos/socisLogo.png"
       logoAlt="SOCIS logo"
       logoOnWhite
       side="left"
@@ -837,10 +839,10 @@ function SocisPresidentEntry() {
       aside={
         <PhotoStack
           photos={[
-            { src: "/group.jpg", alt: "Image of computing community", width: 4032, height: 1444 },
-            { src: "/socis_president_a.jpg", alt: "SOCIS members with pizza at an election event", width: 4080, height: 3072 },
-            { src: "/socis_president_b.png", alt: "SOCIS President photo", width: 895, height: 895 },
-            { src: "/socis_president_c.png", alt: "SOCIS President photo", width: 889, height: 886 },
+            { src: "/photos/group.jpg", alt: "Image of computing community", width: 4032, height: 1444 },
+            { src: "/photos/socis/socis_president_a.jpg", alt: "SOCIS members with pizza at an election event", width: 4080, height: 3072 },
+            { src: "/photos/socis/socis_president_b.png", alt: "SOCIS President photo", width: 895, height: 895 },
+            { src: "/photos/socis/socis_president_c.png", alt: "SOCIS President photo", width: 889, height: 886 },
           ]}
         />
       }
@@ -942,7 +944,7 @@ function RecommendationCard({
 const recommendations = [
   {
     name: "Purvi Patel",
-    photo: "/purvi_patel.jpg",
+    photo: "/people/purvi_patel.jpg",
     title: "Regional Manager (Canada), University of Guelph",
     relationship: "Managed Daniel directly · December 5, 2025",
     quote:
@@ -950,7 +952,7 @@ const recommendations = [
   },
   {
     name: "Monica Cojocaru",
-    photo: "/monica_cojocaru.jpg",
+    photo: "/people/monica_cojocaru.jpg",
     title: "Associate Dean, Research and Graduate Studies, University of Guelph",
     relationship: "Senior to Daniel, did not manage him directly · October 24, 2024",
     quote:
@@ -958,7 +960,7 @@ const recommendations = [
   },
   {
     name: "Dr. Bethany Davidson-Eng",
-    photo: "/bethany_davidson-eng.jpg",
+    photo: "/people/bethany_davidson-eng.jpg",
     title: "College Research Manager, College of Engineering and Physical Sciences, University of Guelph",
     relationship: "Managed Daniel directly · September 4, 2024",
     quote:
@@ -1029,7 +1031,7 @@ export default function PageContent() {
       >
         <Box
           component="img"
-          src="/cave2.webp"
+          src="/backgrounds/cave2.webp"
           alt="Waterfall inside a cave"
           width={996}
           height={1024}
@@ -1090,7 +1092,7 @@ export default function PageContent() {
           <Container maxWidth="md">
             <Box sx={{ display: "flex", flexDirection: { xs: "column", md: "row" }, gap: { xs: 4, md: 6 }, alignItems: "flex-start" }}>
               <Box sx={{ flexShrink: 0, mx: { xs: "auto", md: 0 } }}>
-                <PhotoFrame src="/me.jpg" alt="Image of Me" width={260} height={260} round />
+                <PhotoFrame src="/people/me.jpg" alt="Image of Me" width={260} height={260} round />
               </Box>
 
               <Stack spacing={3} sx={{ textAlign: { xs: "center", md: "left" } }}>
@@ -1164,7 +1166,7 @@ export default function PageContent() {
             <CollapsibleEarlyChapters label="2017 – 2022 · Before university (high school)">
               <YearMarker year="2017" />
               <TimelineEntry
-                logo="/ymca_logo.jpg"
+                logo="/logos/ymca_logo.jpg"
                 logoAlt="YMCA logo"
                 side="left"
                 tag="Job"
@@ -1187,7 +1189,7 @@ export default function PageContent() {
 
               <YearMarker year="2018" />
               <TimelineEntry
-                logo="/st_benedict_logo.jpg"
+                logo="/logos/st_benedict_logo.jpg"
                 logoAlt="St. Benedict Catholic Secondary School logo"
                 side="right"
                 tag="Education"
@@ -1208,7 +1210,7 @@ export default function PageContent() {
 
               <YearMarker year="2019" />
               <TimelineEntry
-                logo="/bloomex_logo.jpg"
+                logo="/logos/bloomex_logo.jpg"
                 logoAlt="Bloomex Canada logo"
                 side="left"
                 tag="Job"
@@ -1231,7 +1233,7 @@ export default function PageContent() {
 
               <YearMarker year="2020" />
               <TimelineEntry
-                logo="/ymca_logo.jpg"
+                logo="/logos/ymca_logo.jpg"
                 logoAlt="YMCA logo"
                 side="right"
                 tag="Job"
@@ -1254,7 +1256,7 @@ export default function PageContent() {
 
               <YearMarker year="2022" />
               <TimelineEntry
-                logo="/ymca_logo.jpg"
+                logo="/logos/ymca_logo.jpg"
                 logoAlt="YMCA logo"
                 side="left"
                 tag="Job"
@@ -1279,7 +1281,7 @@ export default function PageContent() {
 
             <CollapsibleYear year="2022">
             <TimelineEntry
-              logo="/university_of_guelph_logo.jpg"
+              logo="/logos/university_of_guelph_logo.jpg"
               logoAlt="University of Guelph logo"
               side="right"
               tag="Education"
@@ -1305,7 +1307,7 @@ export default function PageContent() {
             <TermCourseworkEntry label="Fall 2022" side="left" hideStartDate />
 
             <TimelineEntry
-              logo="/socisLogo.png"
+              logo="/logos/socisLogo.png"
               logoAlt="SOCIS logo"
               logoOnWhite
               side="right"
@@ -1321,10 +1323,10 @@ export default function PageContent() {
               aside={
                 <PhotoStack
                   photos={[
-                    { src: "/socis_marketing_a.jpg", alt: "SOCIS marketing committee event photo", width: 4080, height: 3072 },
-                    { src: "/socis_marketing_b.jpg", alt: "SOCIS marketing committee event photo", width: 4080, height: 3072 },
-                    { src: "/socis_marketing_c.jpg", alt: "SOCIS marketing committee event photo", width: 4080, height: 3072 },
-                    { src: "/socis_marketing_d.png", alt: "SOCIS marketing committee photo", width: 897, height: 889 },
+                    { src: "/photos/socis/socis_marketing_a.jpg", alt: "SOCIS marketing committee event photo", width: 4080, height: 3072 },
+                    { src: "/photos/socis/socis_marketing_b.jpg", alt: "SOCIS marketing committee event photo", width: 4080, height: 3072 },
+                    { src: "/photos/socis/socis_marketing_c.jpg", alt: "SOCIS marketing committee event photo", width: 4080, height: 3072 },
+                    { src: "/photos/socis/socis_marketing_d.png", alt: "SOCIS marketing committee photo", width: 897, height: 889 },
                   ]}
                 />
               }
@@ -1353,7 +1355,7 @@ export default function PageContent() {
               githubUrl="https://github.com/ddombrov/BabyNamesFrequencyProject"
               tryUrl="/baby-names"
               skills={["Python", "Pandas"]}
-              aside={<PhotoFrame src="/babyNames.png" alt="Baby Names Frequency Tracker screenshot" width={520} height={293} />}
+              aside={<PhotoFrame src="/projects/babyNames.png" alt="Baby Names Frequency Tracker screenshot" width={520} height={293} />}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
                 Designed a Python program with a team of four to analyze name
@@ -1365,7 +1367,7 @@ export default function PageContent() {
             </TimelineEntry>
 
             <TimelineEntry
-              logo="/socisLogo.png"
+              logo="/logos/socisLogo.png"
               logoAlt="SOCIS logo"
               logoOnWhite
               side="left"
@@ -1380,10 +1382,10 @@ export default function PageContent() {
               aside={
                 <PhotoStack
                   photos={[
-                    { src: "/socis_vp_a.jpg", alt: "SOCIS VP Communications event photo", width: 3024, height: 4032 },
-                    { src: "/socis_vp_b.jpg", alt: "SOCIS VP Communications event photo", width: 3024, height: 4032 },
-                    { src: "/socis_vp_c.png", alt: "SOCIS VP Communications photo", width: 895, height: 898 },
-                    { src: "/socis_vp_d.png", alt: "SOCIS VP Communications photo", width: 897, height: 894 },
+                    { src: "/photos/socis/socis_vp_a.jpg", alt: "SOCIS VP Communications event photo", width: 3024, height: 4032 },
+                    { src: "/photos/socis/socis_vp_b.jpg", alt: "SOCIS VP Communications event photo", width: 3024, height: 4032 },
+                    { src: "/photos/socis/socis_vp_c.png", alt: "SOCIS VP Communications photo", width: 895, height: 898 },
+                    { src: "/photos/socis/socis_vp_d.png", alt: "SOCIS VP Communications photo", width: 897, height: 894 },
                   ]}
                 />
               }
@@ -1405,7 +1407,7 @@ export default function PageContent() {
             <TermCourseworkEntry label="Fall 2023" side="left" />
 
             <TimelineEntry
-              logo="/gdscLogo.png"
+              logo="/logos/gdscLogo.png"
               logoAlt="GDSC logo"
               side="right"
               tag="Extracurriculars"
@@ -1439,7 +1441,7 @@ export default function PageContent() {
             <TermCourseworkEntry label="Winter 2024" side="right" />
 
             <TimelineEntry
-              logo="/care_ai_logo.jpg"
+              logo="/logos/care_ai_logo.jpg"
               logoAlt="CARE-AI logo"
               side="left"
               tag="Certification"
@@ -1448,7 +1450,7 @@ export default function PageContent() {
               companyUrl="https://www.linkedin.com/company/care-ai"
               startDate="Jan 2024"
               hideStartDate
-              aside={<PhotoFrame src="/care-ai-cert.png" alt="CARE-AI certificate of completion" width={210} height={273} />}
+              aside={<PhotoFrame src="/certificates/care-ai-cert.png" alt="CARE-AI certificate of completion" width={210} height={273} />}
             >
               <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)", textShadow, mt: 2 }}>
                 Completed through the Centre for Advancing Responsible &amp;
@@ -1505,7 +1507,7 @@ export default function PageContent() {
             <TermCourseworkEntry label="Summer 2024" side="left" />
 
             <TimelineEntry
-              logo="/ceps_uofg_logo.jpg"
+              logo="/logos/ceps_uofg_logo.jpg"
               logoAlt="College of Engineering and Physical Sciences, University of Guelph logo"
               side="right"
               tag="Co-op"
@@ -1521,7 +1523,7 @@ export default function PageContent() {
               aside={
                 <Stack spacing={3}>
                   <Box>
-                    <PhotoFrame src="/coop-nomination.jpg" alt="Co-op Employee of the Year Nomination certificate" width={210} height={273} />
+                    <PhotoFrame src="/certificates/coop-nomination.jpg" alt="Co-op Employee of the Year Nomination certificate" width={210} height={273} />
                     <Typography variant="body2" sx={{ color: "#EDEFF3", textShadow, mt: 1 }}>
                       Nominated for Co-op Employee of the Year by University of
                       Guelph Experiential Learning, Aug 2024, on behalf of the
@@ -1564,7 +1566,7 @@ export default function PageContent() {
             <TermCourseworkEntry label="Fall 2024" side="right" />
 
             <TimelineEntry
-              logo="/city_of_guelph_logo.jpg"
+              logo="/logos/city_of_guelph_logo.jpg"
               logoAlt="City of Guelph logo"
               side="left"
               tag="Co-op"
@@ -1595,7 +1597,7 @@ export default function PageContent() {
             <TermCourseworkEntry label="Winter 2025" side="right" />
 
             <TimelineEntry
-              logo="/uog_gcc_logo.jpg"
+              logo="/logos/uog_gcc_logo.jpg"
               logoAlt="Guelph Coding Community logo"
               side="left"
               tag="Volunteer"
@@ -1615,7 +1617,7 @@ export default function PageContent() {
             </TimelineEntry>
 
             <TimelineEntry
-              logo="/lapis_logo.jpg"
+              logo="/logos/lapis_logo.jpg"
               logoAlt="Lapis logo"
               side="right"
               tag="Part-time"
@@ -1660,7 +1662,7 @@ export default function PageContent() {
             <TermCourseworkEntry label="Summer 2025" side="right" />
 
             <TimelineEntry
-              logo="/canadian_institute_for_health_information_logo.jpg"
+              logo="/logos/canadian_institute_for_health_information_logo.jpg"
               logoAlt="Canadian Institute for Health Information logo"
               side="left"
               tag="Co-op"
@@ -1689,7 +1691,7 @@ export default function PageContent() {
             <TermCourseworkEntry label="Fall 2025" side="right" />
 
             <TimelineEntry
-              logo="/university_of_guelph_logo.jpg"
+              logo="/logos/university_of_guelph_logo.jpg"
               logoAlt="University of Guelph logo"
               side="left"
               tag="Recommendation"
@@ -1709,7 +1711,7 @@ export default function PageContent() {
             <TermCourseworkEntry label="Winter 2026" side="right" />
 
             <TimelineEntry
-              logo="/usepepper_logo.jpg"
+              logo="/logos/usepepper_logo.jpg"
               logoAlt="Pepper logo"
               side="left"
               tag="Co-op"
@@ -1736,7 +1738,7 @@ export default function PageContent() {
             <TermCourseworkEntry label="Summer 2026" side="right" />
 
             <TimelineEntry
-              logo="/usepepper_logo.jpg"
+              logo="/logos/usepepper_logo.jpg"
               logoAlt="Pepper logo"
               side="right"
               tag="Co-op"
@@ -1763,7 +1765,7 @@ export default function PageContent() {
             <TermCourseworkEntry label="Fall 2026" side="left" />
 
             <TimelineEntry
-              logo="/usepepper_logo.jpg"
+              logo="/logos/usepepper_logo.jpg"
               logoAlt="Pepper logo"
               side="left"
               tag="Part-time"

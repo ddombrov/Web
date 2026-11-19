@@ -8,9 +8,9 @@ type BubbleKind = "css" | "photo1" | "photo2";
 type Bubble = { top: string; side: "left" | "right"; offset: number; size: number; duration: number; delay: number; rise: number; sway: number; kind: BubbleKind };
 
 const PHOTO_SRC: Record<BubbleKind, string> = {
-  css: "/bubble-blue.webp",
-  photo1: "/bubble-blue.webp",
-  photo2: "/bubble-blue.webp",
+  css: "/backgrounds/bubble-blue.webp",
+  photo1: "/backgrounds/bubble-blue.webp",
+  photo2: "/backgrounds/bubble-blue.webp",
 };
 
 // Every kind renders the same glossy blue bubble image; the kinds only

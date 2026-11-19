@@ -9,8 +9,8 @@ const REPO = "https://github.com/ddombrov/BabyNamesFrequencyProject";
 const DOWNLOAD = `${REPO}/archive/refs/heads/main.zip`;
 
 const screenshots = [
-  { src: "/baby-names/graph.jpg", alt: "Graph comparing how often two names were given over the years" },
-  { src: "/baby-names/top10.jpg", alt: "The ten most popular names for a chosen year" },
+  { src: "/projects/baby-names/graph.jpg", alt: "Graph comparing how often two names were given over the years" },
+  { src: "/projects/baby-names/top10.jpg", alt: "The ten most popular names for a chosen year" },
 ];
 
 // Streamlit apps can't run on Cloudflare, so this page offers the app as a download with a one-click run script.

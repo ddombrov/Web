@@ -18,7 +18,13 @@ project has its own page that embeds it from its own address: `/splendor-duel`, 
 my-app/
   src/app/            pages and components (components/PageContent.tsx holds the timeline content)
   functions/api/      Cloudflare Pages Functions
-  public/             images, logos, voice samples
+  public/brand/       the site's logo
+  public/logos/       school, employer and club logos
+  public/people/      portraits on the timeline
+  public/photos/      club photos (socis/), co-op term photos (coop/) and the group photo
+  public/certificates/ certificates and nominations
+  public/backgrounds/ the hero mountain, the cave, the bubble and the ocean overlay
+  public/projects/    project screenshots and pictures
   public/sea/         the sea life drifting through the Experience section
 ```
 

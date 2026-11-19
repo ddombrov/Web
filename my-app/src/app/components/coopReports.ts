@@ -18,10 +18,10 @@ export type CoopReport = {
 export const coopReports: Record<string, CoopReport> = {
   "uofg-2024": {
     photos: [
-      { src: "/coop/s24a.png", alt: "The Summerlee Science Centre in the daytime", width: 520, height: 292 },
-      { src: "/coop/s24b.png", alt: "A screenshot of the AI4CastingHub's homepage on their website", width: 1280, height: 719 },
-      { src: "/coop/s24c.png", alt: "A screenshot of the statistical research that the AI4CastingHub works with", width: 1280, height: 719 },
-      { src: "/coop/s24d.png", alt: "The University of Guelph crest", width: 864, height: 304 },
+      { src: "/photos/coop/s24a.png", alt: "The Summerlee Science Centre in the daytime", width: 520, height: 292 },
+      { src: "/photos/coop/s24b.png", alt: "A screenshot of the AI4CastingHub's homepage on their website", width: 1280, height: 719 },
+      { src: "/photos/coop/s24c.png", alt: "A screenshot of the statistical research that the AI4CastingHub works with", width: 1280, height: 719 },
+      { src: "/photos/coop/s24d.png", alt: "The University of Guelph crest", width: 864, height: 304 },
     ],
     intro: [
       "I was hired by the University of Guelph in their College of Engineering and Physical Sciences department. My role involved working directly for the research manager of graduate studies, Dr. Bethany Davidson-Eng, to contribute to web development projects. I was placed in an office in the Summerlee Science Centre, where I was near other co-op students, graduate students, and professors, all contributing to varied important research.",
@@ -46,10 +46,10 @@ export const coopReports: Record<string, CoopReport> = {
 
   "guelph-2024": {
     photos: [
-      { src: "/coop/f24a.jpg", alt: "Guelph City Hall, located at 1 Carden Street, in the daytime", width: 800, height: 449 },
-      { src: "/coop/f24b.jpg", alt: "A whiteboard with the words \"Welcome to IT!\" and drawings of a computer and Clippy", width: 1280, height: 719 },
-      { src: "/coop/f24c.jpg", alt: "The IT Service Desk team dressed as Skittles on Halloween", width: 1280, height: 960 },
-      { src: "/coop/f24d.png", alt: "The City of Guelph logo, with the slogan \"Making a Difference\"", width: 900, height: 500 },
+      { src: "/photos/coop/f24a.jpg", alt: "Guelph City Hall, located at 1 Carden Street, in the daytime", width: 800, height: 449 },
+      { src: "/photos/coop/f24b.jpg", alt: "A whiteboard with the words \"Welcome to IT!\" and drawings of a computer and Clippy", width: 1280, height: 719 },
+      { src: "/photos/coop/f24c.jpg", alt: "The IT Service Desk team dressed as Skittles on Halloween", width: 1280, height: 960 },
+      { src: "/photos/coop/f24d.png", alt: "The City of Guelph logo, with the slogan \"Making a Difference\"", width: 900, height: 500 },
     ],
     intro: [
       "During this term, I was employed by the City of Guelph in their IT Service Desk department. My role involved working directly for Viva Batista, the IT Service Desk Supervisor, to assist city staff with their day-to-day technology problems. I worked at the front desk of the IT Service Desk at City Hall, where I worked with another co-op student, senior support technicians, and the IT Asset team. We all collaborated to ensure smooth daily operations for the City.",
@@ -75,10 +75,10 @@ export const coopReports: Record<string, CoopReport> = {
 
   "cihi-2025": {
     photos: [
-      { src: "/coop/s25a.png", alt: "The exterior of CIHI's Toronto office building", width: 967, height: 640 },
-      { src: "/coop/s25b.jpg", alt: "Two co-ops at a CIHI celebration event", width: 1280, height: 960 },
-      { src: "/coop/s25c.png", alt: "A group photo of all of CIHI's Toronto co-ops", width: 1280, height: 960 },
-      { src: "/coop/s25d.png", alt: "The CIHI logo, \"Canadian Institute for Health Information\"", width: 1280, height: 720 },
+      { src: "/photos/coop/s25a.png", alt: "The exterior of CIHI's Toronto office building", width: 967, height: 640 },
+      { src: "/photos/coop/s25b.jpg", alt: "Two co-ops at a CIHI celebration event", width: 1280, height: 960 },
+      { src: "/photos/coop/s25c.png", alt: "A group photo of all of CIHI's Toronto co-ops", width: 1280, height: 960 },
+      { src: "/photos/coop/s25d.png", alt: "The CIHI logo, \"Canadian Institute for Health Information\"", width: 1280, height: 720 },
     ],
     intro: [
       "I was hired by CIHI in their Enterprise Architecture department. My role involved working closely with my supervisor, Emerald Liang, to automate various projects for the Enterprise Architecture team. I worked in a hybrid format, spending three days from home and two days at CIHI's Toronto office, where I collaborated with other co-op students, technical architects, and business analysts working on healthcare system improvements across Canada.",
@@ -104,10 +104,10 @@ export const coopReports: Record<string, CoopReport> = {
 
   "pepper-2026-winter": {
     photos: [
-      { src: "/coop/w26a.png", alt: "The exterior of Pepper's Toronto office building (in the WeWork building)", width: 724, height: 1074 },
-      { src: "/coop/w26b.png", alt: "The view from Pepper's Toronto office", width: 1172, height: 1026 },
-      { src: "/coop/w26c.png", alt: "The coffee shop on the first floor where staff sometimes go for lunch", width: 1280, height: 828 },
-      { src: "/coop/w26d.png", alt: "The Pepper logo, dark green background with light green text", width: 200, height: 200 },
+      { src: "/photos/coop/w26a.png", alt: "The exterior of Pepper's Toronto office building (in the WeWork building)", width: 724, height: 1074 },
+      { src: "/photos/coop/w26b.png", alt: "The view from Pepper's Toronto office", width: 1172, height: 1026 },
+      { src: "/photos/coop/w26c.png", alt: "The coffee shop on the first floor where staff sometimes go for lunch", width: 1280, height: 828 },
+      { src: "/photos/coop/w26d.png", alt: "The Pepper logo, dark green background with light green text", width: 200, height: 200 },
     ],
     intro: [
       "I was hired by Pepper in the Business Operations department. My role involved working directly for the Head of Business Operations, Senior Director, Anna Toronova, to contribute to software projects. The job was remote with the option of coming to the office in downtown Toronto, beside Union Station, near other co-op students and full-time employees.",
@@ -132,10 +132,10 @@ export const coopReports: Record<string, CoopReport> = {
 
   "pepper-2026-summer": {
     photos: [
-      { src: "/coop/s26a.png", alt: "The exterior of Pepper's Toronto office building", width: 1280, height: 1728 },
-      { src: "/coop/s26b.png", alt: "The lobby area on the 14th floor, where Pepper's office is located", width: 1280, height: 853 },
-      { src: "/coop/s26c.png", alt: "The third floor lounge area where staff sometimes go for coffee", width: 1280, height: 854 },
-      { src: "/coop/s26d.png", alt: "The new Pepper logo", width: 600, height: 138 },
+      { src: "/photos/coop/s26a.png", alt: "The exterior of Pepper's Toronto office building", width: 1280, height: 1728 },
+      { src: "/photos/coop/s26b.png", alt: "The lobby area on the 14th floor, where Pepper's office is located", width: 1280, height: 853 },
+      { src: "/photos/coop/s26c.png", alt: "The third floor lounge area where staff sometimes go for coffee", width: 1280, height: 854 },
+      { src: "/photos/coop/s26d.png", alt: "The new Pepper logo", width: 600, height: 138 },
     ],
     intro: [
       "During this term, I continued to be employed by Pepper in their Pepper Labs department. My role involved working directly for Anna Toronova, the Head of Business Operations, Senior Director, to develop new projects and tools. I worked at 1 University Avenue, just beside Union Station, where I worked alongside another co-op student and an assortment of other employees in marketing, business, and engineering. We all collaborated to launch products successfully and deliver real value to our customers.",

@@ -143,7 +143,7 @@ export default function Nav() {
           onClick={() => handleClick({ kind: "scroll", id: "home", label: "Home" })}
           sx={{ display: "flex", alignItems: "center", cursor: "pointer" }}
         >
-          <Image src="/logo.jpg" alt="Logo" width={40} height={40} style={{ borderRadius: 4 }} />
+          <Image src="/brand/logo.jpg" alt="Logo" width={40} height={40} style={{ borderRadius: 4 }} />
         </Box>
 
         {isMobile ? (

@@ -34,7 +34,7 @@ export default function Hero() {
     <Box id="home" sx={{ position: "relative", minHeight: "100vh", overflow: "hidden" }}>
       <Box
         component="img"
-        src="/mountain3.jpg"
+        src="/backgrounds/mountain3.jpg"
         alt="Snow-capped mountain"
         sx={{
           position: "absolute",

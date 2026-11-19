@@ -212,13 +212,14 @@ function pickSome<T>(list: T[], count: number): T[] {
   return copy.slice(0, count);
 }
 
-type Swimmer = { id: string; n: number; face: Face; size: number; depth: Depth; top: number; tilt: number; duration: number; delay: number; reverse: boolean; bob: number };
-type Placed = { id: string; n: number; size: number; top: number; side: "left" | "right"; edge: number; tilt: number; duration: number; delay: number };
+type Swimmer = { id: string; n: number; face: Face; size: number; depth: Depth; top: number; tilt: number; duration: number; delay: number; reverse: boolean; bob: number; bobDuration: number };
+type StillKind = "drifter" | "crawler" | "seabed" | "pearl";
+type Still = { id: string; kind: StillKind; n: number; size: number; tilt: number; duration: number; delay: number };
+type Placed = Still & { x: number; y: number; side: "left" | "right" };
 
-// A fresh mix every visit: some creatures from each group, spread down the section.
+// A fresh mix every visit. Swimmers cross the section at their depth; everything else stays in one spot,
+// which is chosen later from the real layout so it never sits on top of a card, a photo or the timeline.
 function randomSea() {
-  const slots = (count: number, from: number, to: number) =>
-    Array.from({ length: count }, (_, i) => from + ((i + 0.2 + Math.random() * 0.6) * (to - from)) / count);
   const swimmers: Swimmer[] = pickSome(SWIMMERS, SWIMMER_COUNT).map((s, i) => ({
     ...s,
     id: `s${i}`,
@@ -228,32 +229,76 @@ function randomSea() {
     duration: 38 + Math.random() * 30 + s.size * 0.15,
     delay: -Math.random() * 60,
     reverse: Math.random() < 0.5,
-    bob: 1.5 + Math.random() * 1.2,
+    bob: 4 + Math.random() * 6,
+    bobDuration: 3 + Math.random() * 3,
   }));
-  const edgeItems = (list: { n: number; size: number }[], count: number, from: number, to: number, prefix: string): Placed[] => {
-    const tops = slots(count, from, to);
-    return pickSome(list, count).map((c, i) => ({
+  const still = (kind: StillKind, list: { n: number; size: number }[], count: number): Still[] =>
+    pickSome(list, count).map((c, i) => ({
       ...c,
-      id: `${prefix}${i}`,
-      top: tops[i],
-      side: i % 2 === 0 ? "left" : "right",
-      edge: -6 - Math.random() * 6,
+      kind,
+      id: `${kind}${i}`,
       tilt: (Math.random() - 0.5) * 20,
-      duration: 4 + Math.random() * 3,
+      duration: 3.5 + Math.random() * 3,
       delay: -Math.random() * 6,
     }));
-  };
   return {
     swimmers,
-    drifters: edgeItems(DRIFTERS, DRIFTER_COUNT, 12, 80, "d").map((d) => ({ ...d, edge: 2 + Math.random() * 4 })),
-    crawlers: edgeItems(CRAWLERS, CRAWLER_COUNT, 20, 85, "c"),
-    seabed: edgeItems(SEABED, SEABED_COUNT, 10, 88, "b"),
+    still: [
+      ...still("drifter", DRIFTERS, DRIFTER_COUNT),
+      ...still("crawler", CRAWLERS, CRAWLER_COUNT),
+      ...still("seabed", SEABED, SEABED_COUNT),
+      { id: "pearl", kind: "pearl" as const, n: PEARL_SHELL, size: 52, tilt: 0, duration: 5, delay: 0 },
+    ],
   };
 }
 
-// A crawler you can click: it freezes for a beat (startled), then scurries off past its edge and fades
-// out, reappearing back at its spot a few seconds later. Every timing below is duplicated between the
-// setTimeout schedule and the animation durations on purpose; they have to stay in lockstep.
+type Rect = { left: number; top: number; right: number; bottom: number };
+const overlaps = (a: Rect, b: Rect) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+const GAP = 16;
+
+// Finds a spot for each resting creature inside `layer` that is clear of the cards, photos and timeline
+// text in the section, and of the other creatures. One that cannot find room is left out.
+function placeStill(items: Still[], layer: HTMLElement): Placed[] {
+  const box = layer.getBoundingClientRect();
+  const width = box.width, height = box.height;
+  const section = layer.parentElement;
+  if (!section || width < 200 || height < 200) return [];
+  const toLocal = (r: DOMRect): Rect => ({
+    left: r.left - box.left - GAP, top: r.top - box.top - GAP, right: r.right - box.left + GAP, bottom: r.bottom - box.top + GAP,
+  });
+  // Anything that shows text or a picture: cards, quotes, headings, dates, chips, links and photos.
+  const content = [...section.querySelectorAll("[data-ocean-avoid], img, svg, p, h1, h2, h3, h4, h5, h6, li, blockquote, span, a, button")]
+    .filter((el) => (el.tagName === "IMG" ? !/\/sea\/|bubble/.test(el.getAttribute("src") ?? "") : el.tagName === "svg" || el.hasAttribute("data-ocean-avoid") || !!el.textContent?.trim()))
+    .map((el) => el.getBoundingClientRect())
+    .filter((r) => r.width > 0 && r.height > 0);
+  const blocked: Rect[] = [
+    ...content.map(toLocal),
+    // The timeline line, its dates and the term headings run down the middle.
+    { left: width / 2 - 120, top: 0, right: width / 2 + 120, bottom: height },
+  ];
+  const placed: Placed[] = [];
+  for (const item of items) {
+    // Drifters float anywhere; crawlers, shells and coral sit near the bottom of their spot's band.
+    for (let attempt = 0; attempt < 120; attempt++) {
+      const x = 4 + Math.random() * (width - item.size - 8);
+      const y = item.kind === "pearl" ? height * (0.85 + Math.random() * 0.13) : height * (0.03 + Math.random() * 0.94);
+      const spot = { left: x, top: y, right: x + item.size, bottom: y + item.size };
+      if (blocked.some((b) => overlaps(spot, b)) || placed.some((p) => overlaps(spot, { left: p.x - GAP, top: p.y - GAP, right: p.x + p.size + GAP, bottom: p.y + p.size + GAP }))) continue;
+      placed.push({ ...item, x, y, side: x + item.size / 2 < width / 2 ? "left" : "right" });
+      break;
+    }
+  }
+  return placed;
+}
+
+function SeaImage({ n, size }: { n: number; size: number }) {
+  // eslint-disable-next-line @next/next/no-img-element -- decorative, randomly chosen background element; not worth next/image's overhead here
+  return <img src={seaSrc(n)} alt="" width={size} height={size} draggable={false} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />;
+}
+
+// A crawler you can click: it freezes for a beat (startled), then scurries off toward its nearer edge and
+// fades out, reappearing back at its spot a few seconds later. Every timing below is duplicated between
+// the setTimeout schedule and the animation durations on purpose; they have to stay in lockstep.
 const FREEZE_MS = 250;
 const FLEE_MS = 650;
 const HIDDEN_MS = 2200;
@@ -278,7 +323,7 @@ function Crawler({ c }: { c: Placed }) {
   }, [phase]);
 
   const base = `${c.side === "left" ? "scaleX(-1) " : ""}rotate(${c.tilt.toFixed(1)}deg)`;
-  // Left-edge crawlers are mirrored, so the same +x step carries every crawler off its own edge.
+  // Left-side crawlers are mirrored, so the same +x step carries every crawler toward its own edge.
   const fleeDx = 70;
   const names = { wiggle: `crawlWiggle_${c.id}`, startle: `crawlStartle_${c.id}`, flee: `crawlFlee_${c.id}`, back: `crawlReturn_${c.id}` };
   const animation =
@@ -294,8 +339,8 @@ function Crawler({ c }: { c: Placed }) {
       aria-label="A sea creature, click it"
       sx={{
         position: "absolute",
-        top: `${c.top}%`,
-        [c.side]: c.edge,
+        left: c.x,
+        top: c.y,
         width: c.size,
         height: c.size,
         cursor: "pointer",
@@ -305,7 +350,7 @@ function Crawler({ c }: { c: Placed }) {
         animation,
         [`@keyframes ${names.wiggle}`]: {
           "0%, 100%": { transform: `${base} translate(0, 0)` },
-          "50%": { transform: `${base} translate(14px, -3px)` },
+          "50%": { transform: `${base} translate(8px, -2px)` },
         },
         [`@keyframes ${names.startle}`]: {
           "0%": { transform: `${base} scale(1)` },
@@ -327,29 +372,25 @@ function Crawler({ c }: { c: Placed }) {
   );
 }
 
-function SeaImage({ n, size }: { n: number; size: number }) {
-  // eslint-disable-next-line @next/next/no-img-element -- decorative, randomly chosen background element; not worth next/image's overhead here
-  return <img src={seaSrc(n)} alt="" width={size} height={size} draggable={false} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />;
-}
-
-// Jellyfish, seahorses and friends bob gently in place.
-function Drifter({ d }: { d: Placed }) {
-  const name = `drift_${d.id}`;
+// Jellyfish, seahorses, shells and coral hover gently in place; drifters move more than things on the seabed.
+function Hovering({ d }: { d: Placed }) {
+  const name = `hover_${d.id}`;
+  const lift = d.kind === "drifter" ? 16 : 5;
   return (
     <Box
       sx={{
         position: "absolute",
-        top: `${d.top}%`,
-        [d.side]: `${d.edge}%`,
+        left: d.x,
+        top: d.y,
         width: d.size,
         height: d.size,
         pointerEvents: "none",
         zIndex: 1,
         filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.35))",
-        animation: `${name} ${d.duration}s ease-in-out ${d.delay}s infinite`,
+        animation: `${name} ${d.duration.toFixed(1)}s ease-in-out ${d.delay.toFixed(1)}s infinite`,
         [`@keyframes ${name}`]: {
           "0%, 100%": { transform: `translateY(0) rotate(${(d.tilt / 2).toFixed(1)}deg)` },
-          "50%": { transform: `translateY(-18px) rotate(${(-d.tilt / 2).toFixed(1)}deg)` },
+          "50%": { transform: `translateY(-${lift}px) rotate(${(-d.tilt / 2).toFixed(1)}deg)` },
         },
         "@media (prefers-reduced-motion: reduce)": { animation: "none" },
       }}
@@ -359,28 +400,8 @@ function Drifter({ d }: { d: Placed }) {
   );
 }
 
-function SeabedItem({ b }: { b: Placed }) {
-  return (
-    <Box
-      sx={{
-        position: "absolute",
-        top: `${b.top}%`,
-        [b.side]: b.edge,
-        width: b.size,
-        height: b.size,
-        pointerEvents: "none",
-        zIndex: 1,
-        transform: `rotate(${b.tilt.toFixed(1)}deg)`,
-        filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.4))",
-      }}
-    >
-      <SeaImage n={b.n} size={b.size} />
-    </Box>
-  );
-}
-
-// The pearl shell at the bottom of the section: click it and it lets out a burst of bubbles.
-function PearlShell() {
+// The pearl shell near the bottom of the section: click it and it lets out a burst of bubbles.
+function PearlShell({ p }: { p: Placed }) {
   const [bursts, setBursts] = useState<number[]>([]);
   return (
     <Box
@@ -389,10 +410,10 @@ function PearlShell() {
       aria-label="A pearl shell, click it"
       sx={{
         position: "absolute",
-        top: "92%",
-        left: -10,
-        width: 52,
-        height: 52,
+        left: p.x,
+        top: p.y,
+        width: p.size,
+        height: p.size,
         cursor: "pointer",
         pointerEvents: "auto",
         zIndex: 1,
@@ -401,7 +422,7 @@ function PearlShell() {
         transition: "transform 0.2s ease-out",
       }}
     >
-      <SeaImage n={PEARL_SHELL} size={52} />
+      <SeaImage n={p.n} size={p.size} />
       {bursts.map((key) => (
         <BubbleBurst key={key} originSide="left" originOffset={50} />
       ))}
@@ -418,9 +439,10 @@ const DASH_MS = 900;
 
 function SwimmingCreature({ f }: { f: Swimmer }) {
   const animName = `seaSwim_${f.id}`;
+  const bobName = `seaBob_${f.id}`;
   const ref = useRef<HTMLDivElement>(null);
   const [dashing, setDashing] = useState(false);
-  const [dashPos, setDashPos] = useState<{ left: number; top: number } | null>(null);
+  const [dashLeft, setDashLeft] = useState<number | null>(null);
   // Mirror the picture when it would otherwise swim tail first.
   const heading: Face = f.reverse ? "left" : "right";
   const mirror = heading !== f.face;
@@ -432,15 +454,14 @@ function SwimmingCreature({ f }: { f: Swimmer }) {
     const elRect = el.getBoundingClientRect();
     const parentRect = parent.getBoundingClientRect();
     const fromLeft = elRect.left - parentRect.left;
-    const fromTop = elRect.top - parentRect.top;
-    const toLeft = f.reverse ? -150 : parentRect.width + 150;
+    const toLeft = f.reverse ? -250 : parentRect.width + 250;
 
     setDashing(true);
-    setDashPos({ left: fromLeft, top: fromTop });
-    requestAnimationFrame(() => requestAnimationFrame(() => setDashPos({ left: toLeft, top: fromTop })));
+    setDashLeft(fromLeft);
+    requestAnimationFrame(() => requestAnimationFrame(() => setDashLeft(toLeft)));
     setTimeout(() => {
       setDashing(false);
-      setDashPos(null);
+      setDashLeft(null);
     }, DASH_MS);
   };
 
@@ -452,28 +473,37 @@ function SwimmingCreature({ f }: { f: Swimmer }) {
       aria-label="A fish, click it"
       sx={{
         position: "absolute",
-        top: dashing ? dashPos?.top ?? `${f.top}%` : `${f.top}%`,
-        left: dashing ? dashPos?.left ?? undefined : undefined,
+        top: `${f.top.toFixed(1)}%`,
+        left: dashing ? dashLeft ?? undefined : undefined,
         width: f.size,
         height: f.size,
         cursor: "pointer",
         pointerEvents: "auto",
         zIndex: 1,
         filter: "drop-shadow(0 3px 8px rgba(0,0,0,0.35))",
-        transform: `${mirror ? "scaleX(-1) " : ""}rotate(${f.tilt.toFixed(1)}deg)`,
         transition: dashing ? `left ${DASH_TRANSITION_S}s cubic-bezier(0.3,0,0.7,1)` : "none",
-        animation: dashing ? "none" : `${animName} ${f.duration.toFixed(1)}s ease-in-out ${f.delay.toFixed(1)}s infinite`,
-        [`@keyframes ${animName}`]: {
-          "0%": { left: f.reverse ? "104%" : "-10%", top: `${f.top}%` },
-          "25%": { top: `${(f.top - f.bob).toFixed(1)}%` },
-          "50%": { left: "50%", top: `${(f.top + f.bob).toFixed(1)}%` },
-          "75%": { top: `${(f.top - f.bob).toFixed(1)}%` },
-          "100%": { left: f.reverse ? "-10%" : "104%", top: `${f.top}%` },
-        },
+        // Straight across at a constant height; only the small bob below moves it up and down.
+        animation: dashing ? "none" : `${animName} ${f.duration.toFixed(1)}s linear ${f.delay.toFixed(1)}s infinite`,
+        [`@keyframes ${animName}`]: f.reverse
+          ? { "0%": { left: "104%" }, "100%": { left: "-14%" } }
+          : { "0%": { left: "-14%" }, "100%": { left: "104%" } },
         "@media (prefers-reduced-motion: reduce)": { animation: "none" },
       }}
     >
-      <SeaImage n={f.n} size={f.size} />
+      <Box
+        sx={{
+          width: "100%",
+          height: "100%",
+          animation: `${bobName} ${f.bobDuration.toFixed(1)}s ease-in-out infinite`,
+          [`@keyframes ${bobName}`]: {
+            "0%, 100%": { transform: `translateY(0) ${mirror ? "scaleX(-1) " : ""}rotate(${f.tilt.toFixed(1)}deg)` },
+            "50%": { transform: `translateY(${f.bob.toFixed(1)}px) ${mirror ? "scaleX(-1) " : ""}rotate(${f.tilt.toFixed(1)}deg)` },
+          },
+          "@media (prefers-reduced-motion: reduce)": { animation: "none", transform: `${mirror ? "scaleX(-1) " : ""}rotate(${f.tilt.toFixed(1)}deg)` },
+        }}
+      >
+        <SeaImage n={f.n} size={f.size} />
+      </Box>
     </Box>
   );
 }
@@ -481,14 +511,36 @@ function SwimmingCreature({ f }: { f: Swimmer }) {
 export default function OceanDecorations() {
   const [bubbles, setBubbles] = useState<Bubble[] | null>(null);
   const [sea, setSea] = useState<ReturnType<typeof randomSea> | null>(null);
+  const [placed, setPlaced] = useState<Placed[]>([]);
+  const layerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setBubbles(randomBubbles());
     setSea(randomSea());
   }, []);
 
+  // Resting creatures are placed from the real layout, and placed again whenever the section changes
+  // size (a window resize, or a year being opened or closed), so they stay clear of the cards.
+  useEffect(() => {
+    const layer = layerRef.current;
+    if (!sea || !layer) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const place = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => setPlaced(placeStill(sea.still, layer)), 400);
+    };
+    place();
+    const observer = new ResizeObserver(place);
+    observer.observe(layer);
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, [sea]);
+
   return (
     <>
+      <Box ref={layerRef} aria-hidden sx={{ position: "absolute", inset: 0, pointerEvents: "none" }} />
       <Box sx={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: -1 }}>
       {bubbles?.map((b, i) => (
         <Box
@@ -527,10 +579,11 @@ export default function OceanDecorations() {
           "-1" no matter what z-index they're individually given, so clicks on them were swallowed by
           invisible layout spacers from the card grid painting above. */}
       {sea?.swimmers.map((f) => <SwimmingCreature key={f.id} f={f} />)}
-      {sea?.drifters.map((d) => <Drifter key={d.id} d={d} />)}
-      {sea?.seabed.map((b) => <SeabedItem key={b.id} b={b} />)}
-      {sea?.crawlers.map((c) => <Crawler key={c.id} c={c} />)}
-      <PearlShell />
+      {placed.map((p) =>
+        p.kind === "crawler" ? <Crawler key={p.id} c={p} />
+        : p.kind === "pearl" ? <PearlShell key={p.id} p={p} />
+        : <Hovering key={p.id} d={p} />
+      )}
     </>
   );
 }

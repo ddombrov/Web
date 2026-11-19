@@ -489,6 +489,7 @@ function TimelineEntry({
       }
     >
       <Box
+        data-ocean-avoid
         onClick={cardClickable ? handleCardClick : undefined}
         onKeyDown={cardClickable ? handleCardKeyDown : undefined}
         role={cardClickable ? "button" : undefined}

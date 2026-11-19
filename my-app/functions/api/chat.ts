@@ -19,6 +19,9 @@ const MODEL = "gpt-4o-mini";
 const PRICE_PER_INPUT_TOKEN = 0.15 / 1_000_000;
 const PRICE_PER_OUTPUT_TOKEN = 0.6 / 1_000_000;
 const SPEND_LIMIT_USD = 0.5;
+// Across all visitors, because a visitor can reset their own $0.50 by clearing their browser storage.
+const DAILY_SITE_LIMIT_USD = 1;
+const DAY_SECONDS = 60 * 60 * 24;
 const USAGE_TTL_SECONDS = 60 * 60 * 24 * 30;
 const MAX_HISTORY_MESSAGES = 16;
 const MAX_MESSAGE_LENGTH = 2000;
@@ -105,6 +108,12 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     return json({ reply: null, limitReached: true, spentUsd: spent });
   }
 
+  const siteKey = `site:${new Date().toISOString().slice(0, 10)}`;
+  const siteSpent = parseFloat((await env.CHAT_USAGE.get(siteKey)) ?? "0") || 0;
+  if (siteSpent >= DAILY_SITE_LIMIT_USD) {
+    return json({ reply: null, limitReached: true, spentUsd: spent });
+  }
+
   const latestUserMessage = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
   if (INJECTION_PATTERNS.some((p) => p.test(latestUserMessage))) {
     return json({
@@ -154,6 +163,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     (usage.prompt_tokens ?? 0) * PRICE_PER_INPUT_TOKEN + (usage.completion_tokens ?? 0) * PRICE_PER_OUTPUT_TOKEN;
   const newSpent = spent + cost;
   await env.CHAT_USAGE.put(usageKey, newSpent.toString(), { expirationTtl: USAGE_TTL_SECONDS });
+  await env.CHAT_USAGE.put(siteKey, (siteSpent + cost).toString(), { expirationTtl: 2 * DAY_SECONDS });
 
   await appendToLog(env, clientId, messages[messages.length - 1], { role: "assistant", content: reply });
 

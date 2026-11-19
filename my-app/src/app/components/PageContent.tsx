@@ -165,9 +165,7 @@ const cadetGrey = "#91A3B0";
 // (very long) timeline.
 const oceanStart = "#123044";
 const oceanEnd = "#0A1F2E";
-// The ocean overlay (soft light and depth, mostly transparent) is stretched over the whole section on top of
-// the colour gradient, as part of the section's own background, so it stays underneath everything inside it.
-const experienceBg = `url(/backgrounds/ocean-overlay.webp) center top / 100% 100% no-repeat, linear-gradient(180deg, ${oceanStart} 0%, ${oceanEnd} 100%)`;
+const experienceBg = `linear-gradient(180deg, ${oceanStart} 0%, ${oceanEnd} 100%)`;
 // True black — Contact sits directly on this, so the page ends on a
 // genuinely black beat instead of the warm near-black used elsewhere.
 const pitchBlack = "#000000";
@@ -970,6 +968,39 @@ const recommendations = [
 
 export default function PageContent() {
   const { filter, prevFilter } = useJourneyFilter();
+
+  // The ocean overlay (soft light and depth, mostly transparent, fading in at its top) spans one stretch of
+  // the page: from the middle of the fog above My Journey down to the bottom of Contact. Each section along
+  // that stretch draws its own slice as part of its background, lined up from the measured layout, so the
+  // slices meet without a seam and the overlay stays underneath all content. It is measured again whenever
+  // the page changes height, such as when a year is opened or closed.
+  const oceanFogRef = useRef<HTMLDivElement>(null);
+  const oceanExperienceRef = useRef<HTMLDivElement>(null);
+  const oceanToContactRef = useRef<HTMLDivElement>(null);
+  const oceanContactRef = useRef<HTMLDivElement>(null);
+  const [oceanLayers, setOceanLayers] = useState<Record<"fog" | "experience" | "toContact" | "contact", string> | null>(null);
+  useEffect(() => {
+    const sections = { fog: oceanFogRef, experience: oceanExperienceRef, toContact: oceanToContactRef, contact: oceanContactRef };
+    const measure = () => {
+      const fog = oceanFogRef.current, contact = oceanContactRef.current;
+      if (!fog || !contact || Object.values(sections).some((r) => !r.current)) return;
+      const pageTop = (el: HTMLElement) => el.getBoundingClientRect().top + window.scrollY;
+      const spanTop = pageTop(fog) + fog.offsetHeight / 2;
+      const spanHeight = Math.round(pageTop(contact) + contact.offsetHeight - spanTop);
+      const layer = (el: HTMLElement) => `url(/backgrounds/ocean-overlay.webp) 0 ${Math.round(spanTop - pageTop(el))}px / 100% ${spanHeight}px no-repeat`;
+      setOceanLayers({
+        fog: layer(fog),
+        experience: layer(oceanExperienceRef.current!),
+        toContact: layer(oceanToContactRef.current!),
+        contact: layer(contact),
+      });
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(document.body);
+    return () => observer.disconnect();
+  }, []);
+  const withOcean = (layer: string | undefined, background: string) => (layer ? `${layer}, ${background}` : background);
   const journeyFilterActive = Boolean(filter);
   const journeyFilterClosing = Boolean(prevFilter) && !filter;
   // Cave is shown at its full, uncropped height, so its zoom stays subtle
@@ -1135,9 +1166,10 @@ export default function PageContent() {
           photo's own trailing fade-out instead of meeting it at a hard
           edge — the mirror of the incoming transition above. */}
       <Box
+        ref={oceanFogRef}
         sx={{
           height: { xs: "50vh", md: "66vh" },
-          background: `linear-gradient(180deg, ${transitionGradientFadeIn(cadetGrey, oceanStart, 42)})`,
+          background: withOcean(oceanLayers?.fog, `linear-gradient(180deg, ${transitionGradientFadeIn(cadetGrey, oceanStart, 42)})`),
           position: "relative",
           zIndex: 2,
           mt: { xs: "-24vh", md: "-31vh" },
@@ -1145,7 +1177,7 @@ export default function PageContent() {
       />
 
       {/* Experience */}
-      <Box id="experience" sx={{ py: { xs: 6, md: 10 }, background: experienceBg, position: "relative", zIndex: 1 }}>
+      <Box id="experience" ref={oceanExperienceRef} sx={{ py: { xs: 6, md: 10 }, background: withOcean(oceanLayers?.experience, experienceBg), position: "relative", zIndex: 1 }}>
         <OceanDecorations />
         <JourneyGalleryOverlay />
         <Container maxWidth="xl">
@@ -1844,9 +1876,10 @@ export default function PageContent() {
           site's other big section transitions spreads that same curve
           over enough distance to look gradual again. */}
       <Box
+        ref={oceanToContactRef}
         sx={{
           height: { xs: "45vh", md: "60vh" },
-          background: `linear-gradient(180deg, ${easedColorStops(oceanEnd, pitchBlack)})`,
+          background: withOcean(oceanLayers?.toContact, `linear-gradient(180deg, ${easedColorStops(oceanEnd, pitchBlack)})`),
           position: "relative",
           zIndex: 1,
         }}
@@ -1856,7 +1889,7 @@ export default function PageContent() {
           no background photo), so it just sits at the bottom of the page
           with a short, fixed amount of padding below it rather than a gap
           that scales with the viewport. */}
-      <Box sx={{ position: "relative", zIndex: 1, textAlign: "center", background: pitchBlack, pt: { xs: 10, md: 14 }, pb: { xs: 4, md: 6 } }}>
+      <Box ref={oceanContactRef} sx={{ position: "relative", zIndex: 1, textAlign: "center", background: withOcean(oceanLayers?.contact, pitchBlack), pt: { xs: 10, md: 14 }, pb: { xs: 4, md: 6 } }}>
         <Reveal>
         <Box id="contact" sx={{ width: "100%", scrollMarginTop: { xs: "80px", md: "88px" } }}>
           <Typography

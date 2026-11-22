@@ -60,9 +60,6 @@ export default function BabyNamesPage() {
           View on GitHub
         </Button>
       </Box>
-      <Typography variant="body2" sx={{ color: "rgba(237,239,243,0.75)", textAlign: "center" }}>
-        Unzip it, then double-click run-windows.bat, or run sh run-mac-linux.sh on a Mac or Linux. Needs Python 3.
-      </Typography>
     </Box>
   );
 }

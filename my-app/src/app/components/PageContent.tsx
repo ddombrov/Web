@@ -403,6 +403,7 @@ function TimelineEntry({
   side = "left",
   isLast = false,
   aside,
+  shot,
   reportKey,
   onCardClick,
   forceWide = false,
@@ -431,6 +432,8 @@ function TimelineEntry({
   side?: "left" | "right";
   isLast?: boolean;
   aside?: React.ReactNode;
+  // A project's screenshot: beside the card on the timeline, and at the top of the card on the Projects page.
+  shot?: { src: string; alt: string; width: number; height: number };
   reportKey?: string;
   onCardClick?: () => void;
   // For entries whose click handler is managed by the caller (a course
@@ -521,6 +524,11 @@ function TimelineEntry({
           },
         }}
       >
+        {cardFlies && shot && (
+          <Box sx={{ mb: 2, borderRadius: 2, overflow: "hidden", border: "1px solid rgba(255,255,255,0.15)", aspectRatio: "16 / 9" }}>
+            <Image src={shot.src} alt={shot.alt} width={shot.width} height={shot.height} style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />
+          </Box>
+        )}
         <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start", flexWrap: "wrap" }}>
           {logo && (
             logoOnWhite ? (
@@ -612,10 +620,11 @@ function TimelineEntry({
     );
   }
 
+  const shownAside = aside ?? (shot && <PhotoFrame src={shot.src} alt={shot.alt} width={shot.width} height={shot.height} />);
   const revealedAside =
-    aside && !(expanded || forceWide) ? (
+    shownAside && !(expanded || forceWide) ? (
       <Reveal direction={side === "left" ? "right" : "left"} once={false}>
-        {aside}
+        {shownAside}
       </Reveal>
     ) : undefined;
 
@@ -1386,6 +1395,7 @@ export default function PageContent() {
               hideStartDate
               githubUrl="https://github.com/ddombrov/BabyNamesFrequencyProject"
               tryUrl="/baby-names"
+              shot={{ src: "/projects/babyNames.png", alt: "Baby Names Frequency Tracker screenshot", width: 1200, height: 515 }}
               skills={["Python", "Pandas"]}
               aside={<PhotoFrame src="/projects/babyNames.png" alt="Baby Names Frequency Tracker screenshot" width={520} height={293} />}
             >
@@ -1499,6 +1509,7 @@ export default function PageContent() {
               hideStartDate
               githubUrl="https://github.com/ddombrov/Billards-Game"
               tryUrl="/billiards"
+              shot={{ src: "/projects/shots/billiards.jpg", alt: "8-Ball game in progress", width: 1200, height: 675 }}
               skills={["C", "Python", "JavaScript", "jQuery", "SQL", "HTML", "CSS", "Cloudflare Workers", "Cloudflare D1"]}
               aside={
                 <Box sx={{ borderRadius: 2, overflow: "hidden", filter: dropShadow, display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "2px", p: "2px", bgcolor: "#fff", maxWidth: 220, mx: { xs: "auto", md: 0 } }}>
@@ -1525,6 +1536,7 @@ export default function PageContent() {
               hideStartDate
               githubUrl="https://github.com/ddombrov/MancalaAndAyoGame"
               tryUrl="/mancala"
+              shot={{ src: "/projects/shots/mancala.jpg", alt: "Mancala game in progress", width: 1200, height: 675 }}
               skills={["Java", "Swing", "JUnit"]}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
@@ -1583,6 +1595,7 @@ export default function PageContent() {
               startDate="Aug 2024"
               githubUrl="https://github.com/ddombrov/HackThe6ix2024"
               tryUrl="/call-me-maybe"
+              shot={{ src: "/projects/shots/call-me-maybe.jpg", alt: "AI Voice Caller home page with the four voices", width: 1200, height: 750 }}
               skills={["Next.js", "OpenAI", "ElevenLabs", "Python", "React", "Firebase", "Material UI"]}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
@@ -1679,6 +1692,7 @@ export default function PageContent() {
               endDate="Apr 2025"
               githubUrl="https://github.com/ddombrov/oh_scanada"
               tryUrl="/barcode-scanner"
+              shot={{ src: "/projects/shots/barcode-scanner.jpg", alt: "Barcode scanner home screen with trending community posts", width: 220, height: 477 }}
               skills={["Flutter", "Dart", "Firestore"]}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
@@ -1829,6 +1843,7 @@ export default function PageContent() {
               startDate="Sep 2026"
               githubUrl="https://github.com/ddombrov/MapsProject"
               tryUrl="/trip-planner"
+              shot={{ src: "/projects/shots/trip-planner.jpg", alt: "AI Vacation Planner showing a Toronto day on the map", width: 1200, height: 675 }}
               skills={["Next.js", "TypeScript", "Tailwind CSS", "Google Maps", "Google Places", "Reddit", "Ticketmaster", "Gemini", "OpenAI", "Supabase"]}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
@@ -1846,6 +1861,7 @@ export default function PageContent() {
               startDate="Nov 2026"
               githubUrl="https://github.com/ddombrov/splendor"
               tryUrl="/splendor-duel"
+              shot={{ src: "/projects/shots/splendor-duel.jpg", alt: "Splendor Duel game against the computer", width: 1200, height: 675 }}
               skills={["React", "Vite", "Tailwind CSS", "Cloudflare Workers", "Cloudflare D1", "JavaScript"]}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>

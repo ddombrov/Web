@@ -493,8 +493,9 @@ function TimelineEntry({
           border: "1px solid #fff",
           borderRadius: 3,
           p: { xs: 2.5, md: 3 },
-          width: { md: cardFlies ? 420 : "auto" },
-          maxWidth: cardFlies ? "88vw" : "none",
+          // On the Projects page each card fills its column exactly, so neighbouring columns never overlap.
+          width: { md: cardFlies ? (filter === "projects" ? "100%" : 420) : "auto" },
+          maxWidth: cardFlies ? (filter === "projects" ? "100%" : "88vw") : "none",
           cursor: cardClickable ? "pointer" : "default",
           transition: "transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease, background-color 0.3s ease",
           "&:hover": {

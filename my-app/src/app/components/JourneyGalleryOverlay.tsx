@@ -151,6 +151,8 @@ export default function JourneyGalleryOverlay() {
                     columnGap: "24px",
                     width: "100%",
                     maxWidth: 1400,
+                    // Room above the first row, so a card that lifts on hover stays in view.
+                    pt: 2,
                     "& > *": { breakInside: "avoid", mb: 3 },
                   }
                 : {

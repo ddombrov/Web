@@ -42,14 +42,6 @@ function slug(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
-const billiardsTableSrcs = ["/projects/billiards/table-0.svg", "/projects/billiards/table-1.svg", "/projects/billiards/table-2.svg", "/projects/billiards/table-3.svg"];
-const billiardsTableSet: LightboxImage[] = billiardsTableSrcs.map((src) => ({
-  src,
-  alt: "Billiards table",
-  width: 600,
-  height: 600,
-}));
-
 // useLayoutEffect prints a "does nothing on the server" warning during the
 // static build's server-side pre-render pass (harmless, but noisy) — this
 // falls back to useEffect there and only becomes the real, before-paint
@@ -361,27 +353,6 @@ function PhotoFrame({
   );
 }
 
-// The billiards project's four table diagrams sit in one 2x2 grid image —
-// each one is still individually clickable through the same Lightbox, and
-// arrow-navigable between the other three.
-function GridImageButton({ src, alt, set }: { src: string; alt: string; set: LightboxImage[] }) {
-  const { open } = useLightbox();
-  return (
-    <Box
-      component="button"
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        open({ src, alt, width: 600, height: 600 }, set);
-      }}
-      aria-label={`View larger image: ${alt}`}
-      sx={{ all: "unset", cursor: "zoom-in", display: "block" }}
-    >
-      <Image src={src} alt={alt} width={150} height={150} style={{ width: "100%", height: "auto", display: "block" }} />
-    </Box>
-  );
-}
-
 // Every kind of milestone (education, club, co-op, award, certification,
 // volunteer role, recommendation) renders through this same entry so the
 // whole university journey reads as one continuous, chronologically
@@ -407,7 +378,7 @@ function TimelineEntry({
   side = "left",
   isLast = false,
   aside,
-  shot,
+  shots = [],
   reportKey,
   onCardClick,
   forceWide = false,
@@ -436,8 +407,9 @@ function TimelineEntry({
   side?: "left" | "right";
   isLast?: boolean;
   aside?: React.ReactNode;
-  // A project's screenshot: beside the card on the timeline, and at the top of the card on the Projects page.
-  shot?: { src: string; alt: string; width: number; height: number };
+  // A project's screenshots: stacked beside the card on the timeline, and the first at the top of the card on the
+  // Projects page.
+  shots?: ReportPhoto[];
   reportKey?: string;
   onCardClick?: () => void;
   // For entries whose click handler is managed by the caller (a course
@@ -466,10 +438,13 @@ function TimelineEntry({
   const cardFlewPrev = Boolean(prevFilter) && (prevFilter === "projects" || prevFilter === "experience") && matchedPrev;
   const cardReturning = cardFlewPrev && !cardFlies;
   const report = reportKey ? coopReports[reportKey] : undefined;
-  const cardClickable = Boolean(githubUrl) || Boolean(report) || Boolean(onCardClick);
+  const cardClickable = Boolean(tryUrl) || Boolean(githubUrl) || Boolean(report) || Boolean(onCardClick);
 
+  // A project's card opens the project itself; its GitHub page has its own button.
   const handleCardClick = () => {
-    if (githubUrl) {
+    if (tryUrl) {
+      window.open(tryUrl, "_blank", "noopener,noreferrer");
+    } else if (githubUrl) {
       window.open(githubUrl, "_blank", "noopener,noreferrer");
     } else if (report) {
       setExpanded((e) => !e);
@@ -502,7 +477,9 @@ function TimelineEntry({
         role={cardClickable ? "button" : undefined}
         tabIndex={cardClickable ? 0 : undefined}
         aria-label={
-          githubUrl
+          tryUrl
+            ? `${title}: open the project`
+            : githubUrl
             ? `${title}: view on GitHub`
             : report
             ? `${title}: ${expanded ? "hide" : "read"} full work term report`
@@ -528,9 +505,9 @@ function TimelineEntry({
           },
         }}
       >
-        {cardFlies && shot && (
+        {cardFlies && shots[0] && (
           <Box sx={{ mb: 2, borderRadius: 2, overflow: "hidden", border: "1px solid rgba(255,255,255,0.15)", aspectRatio: "16 / 9" }}>
-            <Image src={shot.src} alt={shot.alt} width={shot.width} height={shot.height} style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />
+            <Image src={shots[0].src} alt={shots[0].alt} width={shots[0].width} height={shots[0].height} style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />
           </Box>
         )}
         <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start", flexWrap: "wrap" }}>
@@ -585,25 +562,47 @@ function TimelineEntry({
 
         {children}
 
-        {tryUrl && (
-          <Button
-            component="a"
-            href={tryUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            variant="outlined"
-            size="small"
-            startIcon={<PlayArrowIcon />}
-            sx={{
-              mt: 1.5,
-              color: "secondary.main",
-              borderColor: "secondary.main",
-              "&:hover": { borderColor: "secondary.main", bgcolor: "rgba(255,255,255,0.06)" },
-            }}
-          >
-            Try Now
-          </Button>
+        {(tryUrl || (githubUrl && tag === "Project")) && (
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1.5 }}>
+            {tryUrl && (
+              <Button
+                component="a"
+                href={tryUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                variant="outlined"
+                size="small"
+                startIcon={<PlayArrowIcon />}
+                sx={{
+                  color: "secondary.main",
+                  borderColor: "secondary.main",
+                  "&:hover": { borderColor: "secondary.main", bgcolor: "rgba(255,255,255,0.06)" },
+                }}
+              >
+                Try Now
+              </Button>
+            )}
+            {githubUrl && (
+              <Button
+                component="a"
+                href={githubUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                variant="outlined"
+                size="small"
+                startIcon={<GitHubIcon />}
+                sx={{
+                  color: "#fff",
+                  borderColor: "rgba(255,255,255,0.6)",
+                  "&:hover": { borderColor: "#fff", bgcolor: "rgba(255,255,255,0.06)" },
+                }}
+              >
+                GitHub
+              </Button>
+            )}
+          </Box>
         )}
 
         {report && (
@@ -624,7 +623,9 @@ function TimelineEntry({
     );
   }
 
-  const shownAside = aside ?? (shot && <PhotoFrame src={shot.src} alt={shot.alt} width={shot.width} height={shot.height} />);
+  const shownAside =
+    aside ??
+    (shots.length > 1 ? <PhotoStack photos={shots} /> : shots[0] && <PhotoFrame src={shots[0].src} alt={shots[0].alt} width={shots[0].width} height={shots[0].height} />);
   const revealedAside =
     shownAside && !(expanded || forceWide) ? (
       <Reveal direction={side === "left" ? "right" : "left"} once={false}>
@@ -1399,7 +1400,10 @@ export default function PageContent() {
               hideStartDate
               githubUrl="https://github.com/ddombrov/BabyNamesFrequencyProject"
               tryUrl="/baby-names"
-              shot={{ src: "/projects/baby-names/graph.jpg", alt: "Baby Names app comparing how often two names were given over the years", width: 1280, height: 800 }}
+              shots={[
+                { src: "/projects/shots/baby-names-1.jpg", alt: "Comparing how often two names were given over the years", width: 1280, height: 800 },
+                { src: "/projects/shots/baby-names-2.jpg", alt: "The ten most popular names for a year", width: 1280, height: 800 },
+              ]}
               skills={["Python", "Pandas"]}
                           >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
@@ -1512,15 +1516,12 @@ export default function PageContent() {
               hideStartDate
               githubUrl="https://github.com/ddombrov/Billards-Game"
               tryUrl="/billiards"
-              shot={{ src: "/projects/shots/billiards.jpg", alt: "8-Ball game in progress", width: 1200, height: 675 }}
+              shots={[
+                { src: "/projects/shots/billiards-1.jpg", alt: "8-Ball game in progress", width: 1600, height: 900 },
+                { src: "/projects/shots/billiards-2.jpg", alt: "The classic look, from the original Python version", width: 1600, height: 900 },
+                { src: "/projects/shots/billiards-3.jpg", alt: "An All Red game", width: 1600, height: 900 },
+              ]}
               skills={["C", "Python", "JavaScript", "jQuery", "SQL", "HTML", "CSS", "Cloudflare Workers", "Cloudflare D1"]}
-              aside={
-                <Box sx={{ borderRadius: 2, overflow: "hidden", filter: dropShadow, display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "2px", p: "2px", bgcolor: "#fff", maxWidth: 220, mx: { xs: "auto", md: 0 } }}>
-                  {billiardsTableSrcs.map((src) => (
-                    <GridImageButton key={src} src={src} alt="Billiards table" set={billiardsTableSet} />
-                  ))}
-                </Box>
-              }
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
                 Programmed a C physics library to simulate billiards ball
@@ -1539,7 +1540,11 @@ export default function PageContent() {
               hideStartDate
               githubUrl="https://github.com/ddombrov/MancalaAndAyoGame"
               tryUrl="/mancala"
-              shot={{ src: "/projects/shots/mancala.jpg", alt: "Mancala game in progress", width: 1200, height: 675 }}
+              shots={[
+                { src: "/projects/shots/mancala-1.jpg", alt: "Mancala game in progress", width: 1600, height: 900 },
+                { src: "/projects/shots/mancala-2.jpg", alt: "The classic look, from the original Swing GUI", width: 1600, height: 900 },
+                { src: "/projects/shots/mancala-3.jpg", alt: "The text look, from the original console version", width: 1600, height: 900 },
+              ]}
               skills={["Java", "Swing", "JUnit"]}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
@@ -1598,7 +1603,10 @@ export default function PageContent() {
               startDate="Aug 2024"
               githubUrl="https://github.com/ddombrov/HackThe6ix2024"
               tryUrl="/call-me-maybe"
-              shot={{ src: "/projects/shots/call-me-maybe.jpg", alt: "AI Voice Caller home page with the four voices", width: 1200, height: 750 }}
+              shots={[
+                { src: "/projects/shots/call-me-maybe-1.jpg", alt: "AI Voice Caller home page with the four voices", width: 1600, height: 900 },
+                { src: "/projects/shots/call-me-maybe-2.jpg", alt: "The form for placing a call", width: 1600, height: 900 },
+              ]}
               skills={["Next.js", "OpenAI", "ElevenLabs", "Python", "React", "Firebase", "Material UI"]}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
@@ -1695,7 +1703,9 @@ export default function PageContent() {
               endDate="Apr 2025"
               githubUrl="https://github.com/ddombrov/oh_scanada"
               tryUrl="/barcode-scanner"
-              shot={{ src: "/projects/shots/barcode-scanner.jpg", alt: "Barcode scanner home screen with trending community posts", width: 220, height: 477 }}
+              shots={[
+                { src: "/projects/shots/barcode-scanner-1.jpg", alt: "The barcode scanner app: home, community and search screens", width: 2400, height: 1350 },
+              ]}
               skills={["Flutter", "Dart", "Firestore"]}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
@@ -1846,7 +1856,11 @@ export default function PageContent() {
               startDate="Sep 2026"
               githubUrl="https://github.com/ddombrov/MapsProject"
               tryUrl="/trip-planner"
-              shot={{ src: "/projects/shots/trip-planner.jpg", alt: "AI Vacation Planner showing a Toronto day on the map", width: 1200, height: 675 }}
+              shots={[
+                { src: "/projects/shots/trip-planner-1.jpg", alt: "A Toronto trip on the map with routes", width: 1600, height: 900 },
+                { src: "/projects/shots/trip-planner-2.jpg", alt: "The trip in the calendar", width: 1600, height: 900 },
+                { src: "/projects/shots/trip-planner-3.jpg", alt: "The trip in the table", width: 1600, height: 900 },
+              ]}
               skills={["Next.js", "TypeScript", "Tailwind CSS", "Google Maps", "Google Places", "Reddit", "Ticketmaster", "Gemini", "OpenAI", "Supabase"]}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
@@ -1864,7 +1878,11 @@ export default function PageContent() {
               startDate="Nov 2026"
               githubUrl="https://github.com/ddombrov/splendor"
               tryUrl="/splendor-duel"
-              shot={{ src: "/projects/shots/splendor-duel.jpg", alt: "Splendor Duel game against the computer", width: 1200, height: 675 }}
+              shots={[
+                { src: "/projects/shots/splendor-duel-1.jpg", alt: "Splendor Duel game against the computer", width: 1600, height: 900 },
+                { src: "/projects/shots/splendor-duel-2.jpg", alt: "Splendor Duel home screen", width: 1600, height: 900 },
+                { src: "/projects/shots/splendor-duel-3.jpg", alt: "The original look", width: 1600, height: 900 },
+              ]}
               skills={["React", "Vite", "Tailwind CSS", "Cloudflare Workers", "Cloudflare D1", "JavaScript"]}
             >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>

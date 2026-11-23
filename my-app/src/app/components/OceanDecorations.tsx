@@ -238,7 +238,7 @@ function randomSea() {
       ...c,
       kind,
       id: `${kind}${i}`,
-      tilt: (Math.random() - 0.5) * 20,
+      tilt: 0,
       duration: 3.5 + Math.random() * 3,
       delay: -Math.random() * 6,
     }));
@@ -260,11 +260,14 @@ const GAP = 16;
 
 // Finds a spot for each resting creature inside `layer` that is clear of the cards, photos and timeline
 // text in the section, and of the other creatures. One that cannot find room is left out.
-function placeStill(items: Still[], layer: HTMLElement): Placed[] {
+type Area = { width: number; height: number; blocked: Rect[] };
+
+// The free area of the section: its size, and everything a resting creature must keep clear of.
+function measureArea(layer: HTMLElement): Area | null {
   const box = layer.getBoundingClientRect();
   const width = box.width, height = box.height;
   const section = layer.parentElement;
-  if (!section || width < 200 || height < 200) return [];
+  if (!section || width < 200 || height < 200) return null;
   const toLocal = (r: DOMRect): Rect => ({
     left: r.left - box.left - GAP, top: r.top - box.top - GAP, right: r.right - box.left + GAP, bottom: r.bottom - box.top + GAP,
   });
@@ -278,17 +281,29 @@ function placeStill(items: Still[], layer: HTMLElement): Placed[] {
     // The timeline line, its dates and the term headings run down the middle.
     { left: width / 2 - 120, top: 0, right: width / 2 + 120, bottom: height },
   ];
+  return { width, height, blocked };
+}
+
+// A random clear spot anywhere in the section (any height), away from the content and the other creatures.
+function findSpot(item: Still, area: Area, others: Placed[]): Placed | null {
+  const { width, height, blocked } = area;
+  for (let attempt = 0; attempt < 120; attempt++) {
+    const x = 4 + Math.random() * (width - item.size - 8);
+    const y = height * (0.03 + Math.random() * 0.94);
+    const spot = { left: x, top: y, right: x + item.size, bottom: y + item.size };
+    if (blocked.some((b) => overlaps(spot, b)) || others.some((o) => o.id !== item.id && overlaps(spot, { left: o.x - GAP, top: o.y - GAP, right: o.x + o.size + GAP, bottom: o.y + o.size + GAP }))) continue;
+    return { ...item, x, y, side: x + item.size / 2 < width / 2 ? "left" : "right" };
+  }
+  return null;
+}
+
+function placeStill(items: Still[], layer: HTMLElement): Placed[] {
+  const area = measureArea(layer);
+  if (!area) return [];
   const placed: Placed[] = [];
   for (const item of items) {
-    // Drifters float anywhere; crawlers, shells and coral sit near the bottom of their spot's band.
-    for (let attempt = 0; attempt < 120; attempt++) {
-      const x = 4 + Math.random() * (width - item.size - 8);
-      const y = item.kind === "pearl" ? height * (0.85 + Math.random() * 0.13) : height * (0.03 + Math.random() * 0.94);
-      const spot = { left: x, top: y, right: x + item.size, bottom: y + item.size };
-      if (blocked.some((b) => overlaps(spot, b)) || placed.some((p) => overlaps(spot, { left: p.x - GAP, top: p.y - GAP, right: p.x + p.size + GAP, bottom: p.y + p.size + GAP }))) continue;
-      placed.push({ ...item, x, y, side: x + item.size / 2 < width / 2 ? "left" : "right" });
-      break;
-    }
+    const spot = findSpot(item, area, placed);
+    if (spot) placed.push(spot);
   }
   return placed;
 }
@@ -306,7 +321,7 @@ const FLEE_MS = 650;
 const HIDDEN_MS = 2200;
 const RETURN_MS = 550;
 
-function Crawler({ c }: { c: Placed }) {
+function Crawler({ c, onHidden }: { c: Placed; onHidden: () => void }) {
   const [phase, setPhase] = useState<"idle" | "frozen" | "fleeing" | "returning">("idle");
 
   useEffect(() => {
@@ -315,13 +330,19 @@ function Crawler({ c }: { c: Placed }) {
       return () => clearTimeout(t);
     }
     if (phase === "fleeing") {
+      const moved = setTimeout(onHidden, FLEE_MS + 50);
       const t = setTimeout(() => setPhase("returning"), FLEE_MS + HIDDEN_MS);
-      return () => clearTimeout(t);
+      return () => {
+        clearTimeout(moved);
+        clearTimeout(t);
+      };
     }
     if (phase === "returning") {
       const t = setTimeout(() => setPhase("idle"), RETURN_MS);
       return () => clearTimeout(t);
     }
+    // onHidden comes fresh from the parent on every render; only a change of phase should restart the timers.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
   const base = `${c.side === "left" ? "scaleX(-1) " : ""}rotate(${c.tilt.toFixed(1)}deg)`;
@@ -377,14 +398,19 @@ function Crawler({ c }: { c: Placed }) {
 // Jellyfish, seahorses, the octopus and coral hover gently in place (drifters more than coral), and slip
 // out of sight when clicked, coming back a few seconds later.
 const GONE_MS = 3000;
-function Hovering({ d }: { d: Placed }) {
+function Hovering({ d, onHidden }: { d: Placed; onHidden: () => void }) {
   const name = `hover_${d.id}`;
   const lift = d.kind === "drifter" ? 16 : 5;
   const [gone, setGone] = useState(false);
   useEffect(() => {
     if (!gone) return;
+    const moved = setTimeout(onHidden, 500);
     const t = setTimeout(() => setGone(false), GONE_MS);
-    return () => clearTimeout(t);
+    return () => {
+      clearTimeout(moved);
+      clearTimeout(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gone]);
   return (
     <Box
@@ -461,14 +487,18 @@ function Shell({ p }: { p: Placed }) {
 const DASH_TRANSITION_S = 0.85;
 const DASH_MS = 900;
 
+const randomTop = (depth: Depth) => DEPTH_BANDS[depth][0] + Math.random() * (DEPTH_BANDS[depth][1] - DEPTH_BANDS[depth][0]);
+
 function SwimmingCreature({ f }: { f: Swimmer }) {
-  const animName = `seaSwim_${f.id}`;
-  const bobName = `seaBob_${f.id}`;
   const ref = useRef<HTMLDivElement>(null);
   const [dashing, setDashing] = useState(false);
   const [dashLeft, setDashLeft] = useState<number | null>(null);
+  // Each pass across the page; after a dash the next one starts fresh from an edge at a new height.
+  const [route, setRoute] = useState({ top: f.top, reverse: f.reverse, pass: 0 });
+  const animName = `seaSwim_${f.id}_${route.pass}`;
+  const bobName = `seaBob_${f.id}`;
   // Mirror the picture when it would otherwise swim tail first.
-  const heading: Face = f.reverse ? "left" : "right";
+  const heading: Face = route.reverse ? "left" : "right";
   const mirror = heading !== f.face;
 
   const handleClick = () => {
@@ -478,7 +508,7 @@ function SwimmingCreature({ f }: { f: Swimmer }) {
     const elRect = el.getBoundingClientRect();
     const parentRect = parent.getBoundingClientRect();
     const fromLeft = elRect.left - parentRect.left;
-    const toLeft = f.reverse ? -250 : parentRect.width + 250;
+    const toLeft = route.reverse ? -250 : parentRect.width + 250;
 
     setDashing(true);
     setDashLeft(fromLeft);
@@ -486,6 +516,7 @@ function SwimmingCreature({ f }: { f: Swimmer }) {
     setTimeout(() => {
       setDashing(false);
       setDashLeft(null);
+      setRoute((r) => ({ top: randomTop(f.depth), reverse: Math.random() < 0.5, pass: r.pass + 1 }));
     }, DASH_MS);
   };
 
@@ -497,7 +528,7 @@ function SwimmingCreature({ f }: { f: Swimmer }) {
       aria-label="A fish, click it"
       sx={{
         position: "absolute",
-        top: `${f.top.toFixed(1)}%`,
+        top: `${route.top.toFixed(1)}%`,
         left: dashing ? dashLeft ?? undefined : undefined,
         width: f.size,
         height: f.size,
@@ -507,8 +538,8 @@ function SwimmingCreature({ f }: { f: Swimmer }) {
         filter: "drop-shadow(0 3px 8px rgba(0,0,0,0.35))",
         transition: dashing ? `left ${DASH_TRANSITION_S}s cubic-bezier(0.3,0,0.7,1)` : "none",
         // Straight across at a constant height; only the small bob below moves it up and down.
-        animation: dashing ? "none" : `${animName} ${f.duration.toFixed(1)}s linear ${f.delay.toFixed(1)}s infinite`,
-        [`@keyframes ${animName}`]: f.reverse
+        animation: dashing ? "none" : `${animName} ${f.duration.toFixed(1)}s linear ${(route.pass ? 0 : f.delay).toFixed(1)}s infinite`,
+        [`@keyframes ${animName}`]: route.reverse
           ? { "0%": { left: "104%" }, "100%": { left: "-14%" } }
           : { "0%": { left: "-14%" }, "100%": { left: "104%" } },
         "@media (prefers-reduced-motion: reduce)": { animation: "none" },
@@ -562,6 +593,14 @@ export default function OceanDecorations() {
     };
   }, [sea]);
 
+  // A creature that went out of sight comes back at a new random spot, clear of the content and the others.
+  const respawn = (id: string) => {
+    const layer = layerRef.current;
+    const area = layer && measureArea(layer);
+    if (!area) return;
+    setPlaced((list) => list.map((p) => (p.id === id ? findSpot(p, area, list) ?? p : p)));
+  };
+
   return (
     <>
       <Box ref={layerRef} aria-hidden sx={{ position: "absolute", inset: 0, pointerEvents: "none" }} />
@@ -604,9 +643,9 @@ export default function OceanDecorations() {
           invisible layout spacers from the card grid painting above. */}
       {sea?.swimmers.map((f) => <SwimmingCreature key={f.id} f={f} />)}
       {placed.map((p) =>
-        p.kind === "crawler" ? <Crawler key={p.id} c={p} />
+        p.kind === "crawler" ? <Crawler key={p.id} c={p} onHidden={() => respawn(p.id)} />
         : p.kind === "pearl" || p.kind === "shell" ? <Shell key={p.id} p={p} />
-        : <Hovering key={p.id} d={p} />
+        : <Hovering key={p.id} d={p} onHidden={() => respawn(p.id)} />
       )}
     </>
   );

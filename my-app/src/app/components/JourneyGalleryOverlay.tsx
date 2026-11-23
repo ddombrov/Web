@@ -142,15 +142,27 @@ export default function JourneyGalleryOverlay() {
           <Box
             ref={(el: HTMLDivElement | null) => setCardsTarget(el)}
             onClick={(e) => e.stopPropagation()}
-            sx={{
-              display: filter === "skills" ? "none" : "flex",
-              flexWrap: "wrap",
-              gap: 3,
-              justifyContent: "center",
-              alignContent: "flex-start",
-              width: "100%",
-              maxWidth: 1400,
-            }}
+            sx={
+              filter === "projects"
+                ? {
+                    // Projects stack in columns, each card straight under the one before, with no gaps.
+                    display: "block",
+                    columnCount: { xs: 1, md: 2, lg: 3 },
+                    columnGap: "24px",
+                    width: "100%",
+                    maxWidth: 1400,
+                    "& > *": { breakInside: "avoid", mb: 3 },
+                  }
+                : {
+                    display: filter === "skills" ? "none" : "flex",
+                    flexWrap: "wrap",
+                    gap: 3,
+                    justifyContent: "center",
+                    alignContent: "flex-start",
+                    width: "100%",
+                    maxWidth: 1400,
+                  }
+            }
           />
         </Box>
       </Box>

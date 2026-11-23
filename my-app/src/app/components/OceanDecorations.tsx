@@ -109,8 +109,8 @@ function BubbleBurst({ originSide, originOffset }: { originSide: "left" | "right
             [originSide]: `calc(${originOffset}% - 8px)`,
             width: b.size,
             height: b.size,
-            animation: `chestBubbleRise ${b.duration}s ease-out ${b.delay}s forwards`,
-            "@keyframes chestBubbleRise": {
+            animation: `shellBubble_${b.id} ${b.duration}s ease-out ${b.delay}s forwards`,
+            [`@keyframes shellBubble_${b.id}`]: {
               "0%": { transform: "translate(0,0)", opacity: 0.9 },
               "100%": { transform: `translate(${b.dx}px, -120px)`, opacity: 0 },
             },
@@ -138,7 +138,6 @@ const SWIMMERS: { n: number; face: Face; size: number; depth: Depth }[] = [
   { n: 4, face: "left", size: 168, depth: "mid" },
   { n: 6, face: "left", size: 44, depth: "surface" },
   { n: 7, face: "left", size: 46, depth: "surface" },
-  { n: 10, face: "left", size: 172, depth: "mid" },
   { n: 11, face: "right", size: 50, depth: "surface" },
   { n: 12, face: "left", size: 144, depth: "mid" },
   { n: 14, face: "right", size: 70, depth: "mid" },
@@ -162,7 +161,6 @@ const SWIMMERS: { n: number; face: Face; size: number; depth: Depth }[] = [
   { n: 41, face: "left", size: 50, depth: "surface" },
   { n: 43, face: "left", size: 54, depth: "surface" },
   { n: 44, face: "right", size: 50, depth: "surface" },
-  { n: 45, face: "left", size: 168, depth: "mid" },
   { n: 48, face: "left", size: 150, depth: "mid" },
   { n: 50, face: "left", size: 58, depth: "deep" },
   { n: 51, face: "left", size: 48, depth: "surface" },
@@ -174,7 +172,6 @@ const SWIMMERS: { n: number; face: Face; size: number; depth: Depth }[] = [
   { n: 61, face: "left", size: 184, depth: "mid" },
   { n: 62, face: "left", size: 160, depth: "mid" },
   { n: 63, face: "left", size: 46, depth: "surface" },
-  { n: 64, face: "left", size: 172, depth: "mid" },
   { n: 66, face: "left", size: 140, depth: "deep" },
   { n: 67, face: "left", size: 36, depth: "surface" },
   { n: 68, face: "left", size: 58, depth: "deep" },
@@ -184,6 +181,11 @@ const SWIMMERS: { n: number; face: Face; size: number; depth: Depth }[] = [
   { n: 73, face: "left", size: 48, depth: "deep" },
   { n: 75, face: "left", size: 50, depth: "surface" },
 ];
+// Some drawings have the body on a slant; these turn them level (degrees, clockwise), measured from each
+// picture's outline, so every fish swims flat along the page.
+const LEVEL: Record<number, number> = {
+  4: 24.5, 14: -8.7, 17: -4, 24: 28.5, 27: -5.3, 28: 12, 29: 4.2, 34: 24.9, 48: 10, 53: -3.1, 57: 3.6, 61: 20.1, 62: 7.4, 66: 16.9, 67: 5, 71: 15.2,
+};
 // Animals without fins to swim with (jellyfish, octopus, cuttlefish, seahorses, the sea dragon) rest
 // near the edges and bob in place instead of crossing the page.
 const DRIFTERS: { n: number; size: number }[] = [
@@ -194,14 +196,13 @@ const CRAWLERS: { n: number; size: number }[] = [
   { n: 13, size: 52 }, { n: 15, size: 54 }, { n: 18, size: 56 }, { n: 32, size: 50 }, { n: 38, size: 48 },
   { n: 39, size: 44 }, { n: 46, size: 52 }, { n: 60, size: 52 }, { n: 65, size: 50 }, { n: 74, size: 48 },
 ];
-// Shells and coral decorate the edges.
-const SEABED: { n: number; size: number }[] = [
-  { n: 5, size: 44 }, { n: 9, size: 52 }, { n: 16, size: 40 }, { n: 23, size: 54 }, { n: 36, size: 44 }, { n: 42, size: 48 }, { n: 72, size: 54 },
-];
+// Shells (they blow bubbles when clicked) and coral decorate the edges.
+const SHELLS: { n: number; size: number }[] = [{ n: 5, size: 44 }, { n: 16, size: 40 }, { n: 36, size: 44 }, { n: 42, size: 48 }];
+const CORAL: { n: number; size: number }[] = [{ n: 9, size: 52 }, { n: 23, size: 54 }, { n: 72, size: 54 }];
 const PEARL_SHELL = 58;
 const seaSrc = (n: number) => `/sea/${String(n).padStart(2, "0")}.webp`;
 
-const SWIMMER_COUNT = 24, DRIFTER_COUNT = 5, CRAWLER_COUNT = 6, SEABED_COUNT = 6;
+const SWIMMER_COUNT = 24, DRIFTER_COUNT = 5, CRAWLER_COUNT = 6, SHELL_COUNT = 3, CORAL_COUNT = 3;
 
 function pickSome<T>(list: T[], count: number): T[] {
   const copy = [...list];
@@ -213,7 +214,7 @@ function pickSome<T>(list: T[], count: number): T[] {
 }
 
 type Swimmer = { id: string; n: number; face: Face; size: number; depth: Depth; top: number; tilt: number; duration: number; delay: number; reverse: boolean; bob: number; bobDuration: number };
-type StillKind = "drifter" | "crawler" | "seabed" | "pearl";
+type StillKind = "drifter" | "crawler" | "shell" | "coral" | "pearl";
 type Still = { id: string; kind: StillKind; n: number; size: number; tilt: number; duration: number; delay: number };
 type Placed = Still & { x: number; y: number; side: "left" | "right" };
 
@@ -224,8 +225,8 @@ function randomSea() {
     ...s,
     id: `s${i}`,
     top: DEPTH_BANDS[s.depth][0] + Math.random() * (DEPTH_BANDS[s.depth][1] - DEPTH_BANDS[s.depth][0]),
-    // Mostly level, with a slight tilt of up to 5 degrees either way.
-    tilt: (Math.random() - 0.5) * 10,
+    // Finned animals swim level, straight across the page.
+    tilt: 0,
     duration: 38 + Math.random() * 30 + s.size * 0.15,
     delay: -Math.random() * 60,
     reverse: Math.random() < 0.5,
@@ -246,7 +247,8 @@ function randomSea() {
     still: [
       ...still("drifter", DRIFTERS, DRIFTER_COUNT),
       ...still("crawler", CRAWLERS, CRAWLER_COUNT),
-      ...still("seabed", SEABED, SEABED_COUNT),
+      ...still("shell", SHELLS, SHELL_COUNT),
+      ...still("coral", CORAL, CORAL_COUNT),
       { id: "pearl", kind: "pearl" as const, n: PEARL_SHELL, size: 52, tilt: 0, duration: 5, delay: 0 },
     ],
   };
@@ -291,9 +293,9 @@ function placeStill(items: Still[], layer: HTMLElement): Placed[] {
   return placed;
 }
 
-function SeaImage({ n, size }: { n: number; size: number }) {
+function SeaImage({ n, size, level = 0 }: { n: number; size: number; level?: number }) {
   // eslint-disable-next-line @next/next/no-img-element -- decorative, randomly chosen background element; not worth next/image's overhead here
-  return <img src={seaSrc(n)} alt="" width={size} height={size} draggable={false} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />;
+  return <img src={seaSrc(n)} alt="" width={size} height={size} draggable={false} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", transform: level ? `rotate(${level}deg)` : undefined }} />;
 }
 
 // A crawler you can click: it freezes for a beat (startled), then scurries off toward its nearer edge and
@@ -372,19 +374,31 @@ function Crawler({ c }: { c: Placed }) {
   );
 }
 
-// Jellyfish, seahorses, shells and coral hover gently in place; drifters move more than things on the seabed.
+// Jellyfish, seahorses, the octopus and coral hover gently in place (drifters more than coral), and slip
+// out of sight when clicked, coming back a few seconds later.
+const GONE_MS = 3000;
 function Hovering({ d }: { d: Placed }) {
   const name = `hover_${d.id}`;
   const lift = d.kind === "drifter" ? 16 : 5;
+  const [gone, setGone] = useState(false);
+  useEffect(() => {
+    if (!gone) return;
+    const t = setTimeout(() => setGone(false), GONE_MS);
+    return () => clearTimeout(t);
+  }, [gone]);
   return (
     <Box
+      onClick={() => setGone(true)}
+      role="button"
+      aria-label="A sea creature, click it"
       sx={{
         position: "absolute",
         left: d.x,
         top: d.y,
         width: d.size,
         height: d.size,
-        pointerEvents: "none",
+        cursor: "pointer",
+        pointerEvents: gone ? "none" : "auto",
         zIndex: 1,
         filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.35))",
         animation: `${name} ${d.duration.toFixed(1)}s ease-in-out ${d.delay.toFixed(1)}s infinite`,
@@ -395,19 +409,29 @@ function Hovering({ d }: { d: Placed }) {
         "@media (prefers-reduced-motion: reduce)": { animation: "none" },
       }}
     >
-      <SeaImage n={d.n} size={d.size} />
+      <Box sx={{ width: "100%", height: "100%", transition: "opacity 0.45s ease, transform 0.45s ease", opacity: gone ? 0 : 1, transform: gone ? "scale(0.4) translateY(20px)" : "none" }}>
+        <SeaImage n={d.n} size={d.size} />
+      </Box>
     </Box>
   );
 }
 
-// The pearl shell near the bottom of the section: click it and it lets out a burst of bubbles.
-function PearlShell({ p }: { p: Placed }) {
+// A shell: click it and it lets out a burst of bubbles. Each burst rises on its own and is removed once it
+// has finished, so clicking again never restarts bubbles that are already on their way up.
+const BURST_MS = 5000;
+let burstKey = 0;
+function Shell({ p }: { p: Placed }) {
   const [bursts, setBursts] = useState<number[]>([]);
+  const blow = () => {
+    const key = burstKey++;
+    setBursts((list) => [...list, key]);
+    setTimeout(() => setBursts((list) => list.filter((k) => k !== key)), BURST_MS);
+  };
   return (
     <Box
-      onClick={() => setBursts((list) => [...list.slice(-2), Date.now()])}
+      onClick={blow}
       role="button"
-      aria-label="A pearl shell, click it"
+      aria-label="A shell, click it"
       sx={{
         position: "absolute",
         left: p.x,
@@ -502,7 +526,7 @@ function SwimmingCreature({ f }: { f: Swimmer }) {
           "@media (prefers-reduced-motion: reduce)": { animation: "none", transform: `${mirror ? "scaleX(-1) " : ""}rotate(${f.tilt.toFixed(1)}deg)` },
         }}
       >
-        <SeaImage n={f.n} size={f.size} />
+        <SeaImage n={f.n} size={f.size} level={LEVEL[f.n]} />
       </Box>
     </Box>
   );
@@ -581,7 +605,7 @@ export default function OceanDecorations() {
       {sea?.swimmers.map((f) => <SwimmingCreature key={f.id} f={f} />)}
       {placed.map((p) =>
         p.kind === "crawler" ? <Crawler key={p.id} c={p} />
-        : p.kind === "pearl" ? <PearlShell key={p.id} p={p} />
+        : p.kind === "pearl" || p.kind === "shell" ? <Shell key={p.id} p={p} />
         : <Hovering key={p.id} d={p} />
       )}
     </>

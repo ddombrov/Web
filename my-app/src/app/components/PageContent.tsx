@@ -260,7 +260,7 @@ function skillIcon(label: string) {
 // straight into the gallery overlay's skills cloud — Framer Motion animates
 // the move automatically since it's the same tracked element, just
 // re-parented. Outside of that filter it just renders in place as before.
-function SkillChips({ items, entryId }: { items: string[]; entryId: string }) {
+function SkillChips({ items, entryId, inGalleryCard = false }: { items: string[]; entryId: string; inGalleryCard?: boolean }) {
   const { filter, prevFilter } = useJourneyFilter();
   const { skillsTarget, registerSkills, isSkillOwner } = useGalleryPortal();
   const rowRef = useRef<HTMLDivElement>(null);
@@ -284,7 +284,11 @@ function SkillChips({ items, entryId }: { items: string[]; entryId: string }) {
             layoutId={chipId}
             style={flying ? { order: skillOrder(s) } : undefined}
             transition={
-              returning
+              // Going from Skills straight to Projects or Experience, a chip lands in its card together with the
+              // card rather than trailing in on its own afterwards.
+              returning && inGalleryCard
+                ? { duration: 0 }
+                : returning
                 ? { duration: 0.4, ease: [0.4, 0, 1, 1] }
                 : { duration: 1.8, ease: [0.22, 1, 0.36, 1], delay: launchDelay(entryId) + i * 0.12 }
             }
@@ -577,7 +581,7 @@ function TimelineEntry({
           </Box>
         </Box>
 
-        {skills.length > 0 && <SkillChips items={skills} entryId={entryId} />}
+        {skills.length > 0 && <SkillChips items={skills} entryId={entryId} inGalleryCard={cardFlies} />}
 
         {children}
 
@@ -1395,10 +1399,9 @@ export default function PageContent() {
               hideStartDate
               githubUrl="https://github.com/ddombrov/BabyNamesFrequencyProject"
               tryUrl="/baby-names"
-              shot={{ src: "/projects/babyNames.png", alt: "Baby Names Frequency Tracker screenshot", width: 1200, height: 515 }}
+              shot={{ src: "/projects/baby-names/graph.jpg", alt: "Baby Names app comparing how often two names were given over the years", width: 1280, height: 800 }}
               skills={["Python", "Pandas"]}
-              aside={<PhotoFrame src="/projects/babyNames.png" alt="Baby Names Frequency Tracker screenshot" width={520} height={293} />}
-            >
+                          >
               <Typography variant="body1" sx={{ color: "#EDEFF3", textShadow, mt: 2 }}>
                 Designed a Python program with a team of four to analyze name
                 trends using historical data, identifying popularity and

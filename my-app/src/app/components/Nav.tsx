@@ -17,6 +17,7 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import { skyColor } from "./styles";
 import { useJourneyFilter, type JourneyFilter } from "./JourneyFilterContext";
+import { SECTION_PATHS, cleanPath, isHomePath, pathFor } from "./sections";
 
 // Skills and Projects don't have their own sections anymore — everything
 // lives on the Journey timeline. Clicking them filters the timeline down
@@ -79,7 +80,7 @@ export default function Nav() {
     // page itself. From any other route (e.g. /call-me-maybe), there's
     // nothing to scroll to yet — navigate home first, then poll briefly for
     // the target to mount, since a client-side route change isn't instant.
-    if (pathname !== "/") {
+    if (!isHomePath(pathname)) {
       router.push("/");
       let attempts = 0;
       const tryScroll = () => {
@@ -98,6 +99,8 @@ export default function Nav() {
   };
 
   const handleClick = (item: NavItem) => {
+    // On the home page the address follows along, so it can be shared or reloaded (see sections.ts).
+    if (isHomePath(pathname)) window.history.replaceState(null, "", item.kind === "scroll" ? (item.id === "home" ? "/" : pathFor({ scroll: item.id })) : pathFor({ filter: item.filter ?? "" }));
     if (item.kind === "scroll") {
       // Home, About Me, My Journey, and Contact are real places on the
       // page — navigating to any of them always closes whatever filter
@@ -119,13 +122,21 @@ export default function Nav() {
     }
   };
 
+  // Closing a Skills, Experience or Projects view by other means leaves the visitor at the Journey.
+  useEffect(() => {
+    if (filter || typeof window === "undefined") return;
+    const here = cleanPath(window.location.pathname);
+    const target = SECTION_PATHS[here];
+    if (target && "filter" in target) window.history.replaceState(null, "", pathFor({ scroll: "experience" }));
+  }, [filter]);
+
   const isActive = (item: NavItem) => (item.kind === "scroll" ? activeId === item.id && !filter : filter === item.filter);
 
   // The transparent, blend-with-the-photo-behind-it look only makes sense
   // on the home page, which always has a dark hero image at the top. Any
   // other route (e.g. /call-me-maybe, which has its own light background)
   // has no guarantee of a dark backdrop, so the nav stays opaque there.
-  const opaque = scrolled || pathname !== "/";
+  const opaque = scrolled || !isHomePath(pathname);
 
   return (
     <AppBar

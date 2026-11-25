@@ -440,6 +440,21 @@ function TimelineEntry({
   const report = reportKey ? coopReports[reportKey] : undefined;
   const cardClickable = Boolean(tryUrl) || Boolean(githubUrl) || Boolean(report) || Boolean(onCardClick);
 
+  // A card that stretches when clicked ignores further clicks until the stretch has finished, so clicking
+  // quickly can't keep flipping it back and forth mid-animation.
+  const resizing = useRef(false);
+  const resizeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const settled = () => {
+    resizing.current = false;
+    if (resizeTimer.current) clearTimeout(resizeTimer.current);
+  };
+  const resize = (toggle: () => void) => {
+    if (resizing.current) return;
+    resizing.current = true;
+    resizeTimer.current = setTimeout(settled, 2500); // in case the animation never reports finishing
+    toggle();
+  };
+
   // A project's card opens the project itself; its GitHub page has its own button.
   const handleCardClick = () => {
     if (tryUrl) {
@@ -447,9 +462,9 @@ function TimelineEntry({
     } else if (githubUrl) {
       window.open(githubUrl, "_blank", "noopener,noreferrer");
     } else if (report) {
-      setExpanded((e) => !e);
+      resize(() => setExpanded((e) => !e));
     } else if (onCardClick) {
-      onCardClick();
+      resize(onCardClick);
     }
   };
   const handleCardKeyDown = (e: React.KeyboardEvent) => {
@@ -469,6 +484,7 @@ function TimelineEntry({
           ? { duration: 0.45, ease: [0.4, 0, 1, 1] }
           : { duration: 1.8, ease: [0.22, 1, 0.36, 1], delay: launchDelay(entryId, 0.6) }
       }
+      onLayoutAnimationComplete={settled}
     >
       <Box
         data-ocean-avoid
@@ -1574,18 +1590,14 @@ export default function PageContent() {
               skills={["Python", "R", "Plotly", "BeautifulSoup", "Selenium"]}
               reportKey="uofg-2024"
               aside={
-                <Stack spacing={3}>
-                  <Box>
-                    <PhotoFrame src="/certificates/coop-nomination.jpg" alt="Co-op Employee of the Year Nomination certificate" width={210} height={273} />
-                    <Typography variant="body2" sx={{ color: "#EDEFF3", textShadow, mt: 1 }}>
-                      Nominated for Co-op Employee of the Year by University of
-                      Guelph Experiential Learning, Aug 2024, on behalf of the
-                      College of Engineering and Physical Sciences.
-                    </Typography>
-                  </Box>
-                  <RecommendationCard {...recommendations[2]} />
-                  <RecommendationCard {...recommendations[1]} />
-                </Stack>
+                <Box>
+                  <PhotoFrame src="/certificates/coop-nomination.jpg" alt="Co-op Employee of the Year Nomination certificate" width={210} height={273} />
+                  <Typography variant="body2" sx={{ color: "#EDEFF3", textShadow, mt: 1 }}>
+                    Nominated for Co-op Employee of the Year by University of
+                    Guelph Experiential Learning, Aug 2024, on behalf of the
+                    College of Engineering and Physical Sciences.
+                  </Typography>
+                </Box>
               }
             >
               <BulletList
@@ -1645,6 +1657,34 @@ export default function PageContent() {
                   <>Facilitated the onboarding of <Hi>125+</Hi> new hires by setting them up on the city network, installing operating systems and software, and disabling accounts for terminated staff using Active Directory</>,
                 ]}
               />
+            </TimelineEntry>
+
+            <TimelineEntry
+              logo="/logos/ceps_uofg_logo.jpg"
+              logoAlt="College of Engineering and Physical Sciences, University of Guelph logo"
+              side="right"
+              tag="Recommendation"
+              title="Recommendation"
+              org="From Dr. Bethany Davidson-Eng, College Research Manager, College of Engineering and Physical Sciences, University of Guelph"
+              startDate="Sep 2024"
+            >
+              <Box sx={{ mt: 2 }}>
+                <RecommendationCard {...recommendations[2]} />
+              </Box>
+            </TimelineEntry>
+
+            <TimelineEntry
+              logo="/logos/ceps_uofg_logo.jpg"
+              logoAlt="College of Engineering and Physical Sciences, University of Guelph logo"
+              side="left"
+              tag="Recommendation"
+              title="Recommendation"
+              org="From Monica Cojocaru, Associate Dean, Research and Graduate Studies, University of Guelph"
+              startDate="Oct 2024"
+            >
+              <Box sx={{ mt: 2 }}>
+                <RecommendationCard {...recommendations[1]} />
+              </Box>
             </TimelineEntry>
             </CollapsibleYear>
 

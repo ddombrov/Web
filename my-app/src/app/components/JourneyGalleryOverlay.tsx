@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
@@ -52,7 +53,13 @@ export default function JourneyGalleryOverlay() {
     };
   }, [active]);
 
-  return (
+  // Rendered at the end of <body>: inside the Journey section it shared that section's layer, so the fog bands
+  // around the section, drawn on a higher layer, showed through on top of it.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+
+  return createPortal(
     <Box
       sx={{
         position: "fixed",
@@ -168,6 +175,7 @@ export default function JourneyGalleryOverlay() {
           />
         </Box>
       </Box>
-    </Box>
+    </Box>,
+    document.body,
   );
 }

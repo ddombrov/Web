@@ -139,6 +139,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env, waitUnti
       body: JSON.stringify({
         model: model.id,
         messages: [{ role: "system", content: SITE_CONTEXT }, ...messages],
+        // Thinking before answering would use up the token limit; short answers about Daniel don't need it.
+        reasoning_effort: "none",
         max_completion_tokens: 400,
       }),
     });

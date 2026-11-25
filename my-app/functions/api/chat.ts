@@ -1,5 +1,6 @@
 /// <reference types="@cloudflare/workers-types" />
 import { SITE_CONTEXT } from "./_siteContext";
+import { reportAiFailure } from "./_alerts";
 
 // Cloudflare Pages Function — the site itself is a static export with no
 // Next.js server, so this is the only piece of the chatbot that runs
@@ -8,16 +9,19 @@ import { SITE_CONTEXT } from "./_siteContext";
 // in the Pages project's dashboard (Settings > Functions):
 //   - OPENAI_API_KEY: secret, the real key
 //   - CHAT_USAGE: a KV namespace binding, used to track per-visitor spend
+//   - ALERTS_TOKEN: secret, lets this function report failures to the alerts Worker
 interface Env {
   OPENAI_API_KEY: string;
   CHAT_USAGE: KVNamespace;
+  ALERTS_TOKEN?: string;
 }
 
-// gpt-4o-mini is OpenAI's cheapest general-purpose chat model at the time
-// this was written. If a cheaper model ships later, swap it here.
-const MODEL = "gpt-4o-mini";
-const PRICE_PER_INPUT_TOKEN = 0.15 / 1_000_000;
-const PRICE_PER_OUTPUT_TOKEN = 0.6 / 1_000_000;
+// The models to try, cheapest first, with their prices per token for the spend limits below. A model that fails
+// (retired, or an outage) is skipped for the next one, and the failure is emailed through the alerts Worker.
+const MODELS = [
+  { id: "gpt-6-luna", input: 0.1 / 1_000_000, output: 0.5 / 1_000_000 },
+  { id: "gpt-5.6-luna", input: 0.2 / 1_000_000, output: 1.2 / 1_000_000 },
+];
 const SPEND_LIMIT_USD = 0.5;
 // Across all visitors, because a visitor can reset their own $0.50 by clearing their browser storage.
 const DAILY_SITE_LIMIT_USD = 1;
@@ -76,7 +80,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
   return json({ accountExhausted: Boolean(exhausted) });
 };
 
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+export const onRequestPost: PagesFunction<Env> = async ({ request, env, waitUntil }) => {
   let body: { clientId?: string; messages?: ChatMessage[] };
   try {
     body = await request.json();
@@ -122,36 +126,42 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     });
   }
 
-  const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${env.OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: [{ role: "system", content: SITE_CONTEXT }, ...messages],
-      max_tokens: 400,
-    }),
-  });
+  let openaiRes: Response | null = null;
+  let model = MODELS[0];
+  for (let i = 0; i < MODELS.length; i++) {
+    model = MODELS[i];
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: model.id,
+        messages: [{ role: "system", content: SITE_CONTEXT }, ...messages],
+        max_completion_tokens: 400,
+      }),
+    });
+    if (res.ok) {
+      openaiRes = res;
+      break;
+    }
 
-  if (!openaiRes.ok) {
-    const detail = await openaiRes.text();
-    console.error("OpenAI upstream error", openaiRes.status, detail);
+    const detail = await res.text();
+    console.error("OpenAI upstream error", model.id, res.status, detail);
+    waitUntil(reportAiFailure(env.ALERTS_TOKEN, "Website chat", model.id, MODELS[i + 1]?.id ?? "", `${res.status} ${detail}`));
 
     // Distinguish "the OpenAI account itself is out of quota/billing" from
     // a transient upstream error — only the former should hide the widget
     // for every other visitor and show a "we're out of credits" message
-    // instead of a generic failure.
-    const isAccountIssue =
-      openaiRes.status === 429 && /insufficient_quota|billing/i.test(detail);
+    // instead of a generic failure. It affects every model, so there is no point trying the next one.
+    const isAccountIssue = res.status === 429 && /insufficient_quota|billing/i.test(detail);
     if (isAccountIssue) {
       await env.CHAT_USAGE.put(ACCOUNT_EXHAUSTED_KEY, "1", { expirationTtl: ACCOUNT_EXHAUSTED_TTL_SECONDS });
       return json({ reply: null, accountExhausted: true });
     }
-
-    return json({ error: "Upstream error" }, 502);
   }
+  if (!openaiRes) return json({ error: "Upstream error" }, 502);
 
   const data = (await openaiRes.json()) as {
     choices?: { message?: { content?: string } }[];
@@ -160,7 +170,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const reply = data.choices?.[0]?.message?.content ?? "Sorry, I couldn't come up with a reply to that.";
   const usage = data.usage ?? {};
   const cost =
-    (usage.prompt_tokens ?? 0) * PRICE_PER_INPUT_TOKEN + (usage.completion_tokens ?? 0) * PRICE_PER_OUTPUT_TOKEN;
+    (usage.prompt_tokens ?? 0) * model.input + (usage.completion_tokens ?? 0) * model.output;
   const newSpent = spent + cost;
   await env.CHAT_USAGE.put(usageKey, newSpent.toString(), { expirationTtl: USAGE_TTL_SECONDS });
   await env.CHAT_USAGE.put(siteKey, (siteSpent + cost).toString(), { expirationTtl: 2 * DAY_SECONDS });
